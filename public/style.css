@@ -2016,3 +2016,10 @@ select:focus {
         justify-content: center;
     }
 }
+.form-help {
+    color: var(--text-tertiary);
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+    line-height: 1.4;
+}

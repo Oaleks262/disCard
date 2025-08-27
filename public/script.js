@@ -942,6 +942,12 @@ async function logout() {
 
 // Cards Management
 async function loadCards() {
+    // Check if user is logged in
+    if (!currentUser) {
+        showPage('login');
+        return;
+    }
+    
     try {
         const response = await fetch(`${API_BASE}/cards`, {
             credentials: 'include'
@@ -949,17 +955,22 @@ async function loadCards() {
         
         if (response.ok) {
             const data = await response.json();
-            userCards = data.cards;
+            console.log('Loaded cards for user:', currentUser.id, 'Cards:', data.cards?.length || 0);
+            userCards = data.cards || [];
             renderCards(userCards);
         } else if (response.status === 401) {
+            console.warn('Unauthorized - redirecting to login');
+            currentUser = null;
             showPage('login');
         } else if (response.status === 423) {
             // Account locked
             const errorData = await response.json();
             showNotification(errorData.error, 'error');
+            currentUser = null;
             showPage('login');
         } else {
-            showNotification(getTranslation('messages.server_error'), 'error');
+            const errorData = await response.json();
+            showNotification(errorData.error || getTranslation('messages.server_error'), 'error');
         }
     } catch (error) {
         console.error('Load cards error:', error);
@@ -1037,12 +1048,24 @@ function showAddCard() {
 async function handleAddCard(e) {
     e.preventDefault();
     
+    // Check if user is logged in
+    if (!currentUser) {
+        showNotification('Увійдіть в систему для додавання карток', 'error');
+        showPage('login');
+        return;
+    }
+    
     const name = document.getElementById('card-name').value.trim();
     const code = document.getElementById('card-code').value.trim();
     const codeType = document.querySelector('input[name="code-type"]:checked').value;
     
     if (!name || !code) {
         showNotification(getTranslation('messages.fill_all_fields'), 'error');
+        return;
+    }
+    
+    if (name.length > 100) {
+        showNotification('Назва картки занадто довга (максимум 100 символів)', 'error');
         return;
     }
     
@@ -1244,8 +1267,20 @@ async function initializeScanner() {
         video.srcObject = currentStream;
         video.play();
         
-        // Initialize Quagga
+        // Initialize scanner with library check
         video.addEventListener('loadedmetadata', () => {
+            const selectedType = document.querySelector('input[name="code-type"]:checked')?.value || 'barcode';
+            
+            if (selectedType === 'qr' && typeof jsQR === 'undefined') {
+                showNotification('QR сканер не доступний. Введіть код вручну.', 'warning');
+                return;
+            }
+            
+            if (selectedType === 'barcode' && typeof Quagga === 'undefined') {
+                showNotification('Штрих-код сканер не доступний. Введіть код вручну.', 'warning');
+                return;
+            }
+            
             initializeQuagga(video);
         });
         
@@ -1257,46 +1292,137 @@ async function initializeScanner() {
 }
 
 function initializeQuagga(video) {
+    // Get current code type selection
+    const selectedType = document.querySelector('input[name="code-type"]:checked')?.value || 'barcode';
+    
+    if (selectedType === 'qr') {
+        initializeQRScanner(video);
+        return;
+    }
+    
+    // Enhanced barcode scanning with Quagga
     Quagga.init({
         inputStream: {
             name: "Live",
             type: "LiveStream",
-            target: video
+            target: video,
+            constraints: {
+                width: { min: 480, ideal: 640, max: 800 },
+                height: { min: 320, ideal: 480, max: 600 },
+                facingMode: "environment"
+            }
         },
+        locator: {
+            patchSize: "medium",
+            halfSample: true
+        },
+        numOfWorkers: 2,
+        frequency: 10,
         decoder: {
             readers: [
                 "code_128_reader",
                 "ean_reader",
-                "ean_8_reader",
+                "ean_8_reader", 
                 "code_39_reader",
                 "code_39_vin_reader",
                 "codabar_reader",
                 "upc_reader",
                 "upc_e_reader",
-                "i2of5_reader"
-            ]
-        }
+                "i2of5_reader",
+                "2of5_reader"
+            ],
+            multiple: false
+        },
+        locate: true
     }, function(err) {
         if (err) {
             console.error('Quagga initialization error:', err);
+            showNotification('Помилка сканера: ' + (err.message || 'Невідома помилка'), 'error');
             return;
         }
-        console.log("Scanner initialized");
+        console.log("Barcode scanner initialized");
         Quagga.start();
     });
     
     Quagga.onDetected(function(result) {
         const code = result.codeResult.code;
-        console.log('Scanned code:', code);
+        console.log('Scanned barcode:', code);
         
-        // Set the scanned code in the form
-        document.getElementById('card-code').value = code;
-        
-        // Close scanner
-        closeScanner();
-        
-        showNotification(getTranslation('messages.code_scanned'), 'success');
+        // Validate and filter out false positives
+        if (code && code.length >= 4 && /^[0-9A-Za-z\-]+$/.test(code)) {
+            // Set the scanned code in the form
+            document.getElementById('card-code').value = code;
+            
+            // Close scanner
+            closeScanner();
+            
+            showNotification('Штрих-код успішно відсканований!', 'success');
+        }
     });
+}
+
+function initializeQRScanner(video) {
+    // Create canvas for QR code processing
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    let isScanning = true;
+    
+    function scanFrame() {
+        if (!isScanning || !video.videoWidth || !video.videoHeight) {
+            if (isScanning) {
+                requestAnimationFrame(scanFrame);
+            }
+            return;
+        }
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        try {
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Use jsQR library to decode QR codes
+            if (typeof jsQR !== 'undefined') {
+                const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert"
+                });
+                
+                if (qrCode && qrCode.data) {
+                    console.log('Scanned QR code:', qrCode.data);
+                    
+                    // Set the scanned code in the form
+                    document.getElementById('card-code').value = qrCode.data;
+                    
+                    // Close scanner
+                    closeScanner();
+                    
+                    showNotification('QR-код успішно відсканований!', 'success');
+                    return;
+                }
+            }
+            
+            // Continue scanning
+            if (isScanning) {
+                requestAnimationFrame(scanFrame);
+            }
+        } catch (error) {
+            console.error('QR scan error:', error);
+            if (isScanning) {
+                setTimeout(scanFrame, 200);
+            }
+        }
+    }
+    
+    // Store scanning state for cleanup
+    video.qrScanning = true;
+    video.stopQRScan = () => { isScanning = false; };
+    
+    // Start scanning loop
+    requestAnimationFrame(scanFrame);
+    
+    // Show message about QR scanning
+    showNotification('QR сканер активний. Наведіть камеру на QR-код...', 'info');
 }
 
 async function toggleCamera() {
@@ -1359,6 +1485,13 @@ function closeScanner() {
     // Stop Quagga
     if (typeof Quagga !== 'undefined') {
         Quagga.stop();
+    }
+    
+    // Stop QR scanning if active
+    const video = document.getElementById('scanner-video');
+    if (video && video.stopQRScan) {
+        video.stopQRScan();
+        video.qrScanning = false;
     }
     
     // Stop camera stream
@@ -2692,3 +2825,36 @@ window.debugApp = {
     loadShoppingLists,
     logout
 };
+
+// Test function for debugging card API
+async function testCardAPI() {
+    console.log('Testing card API...');
+    console.log('Current user:', currentUser);
+    
+    if (\!currentUser) {
+        console.log('No user logged in');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/cards`, {
+            credentials: 'include'
+        });
+        
+        console.log('Cards API Response status:', response.status);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Cards API Response data:', data);
+        } else {
+            const errorData = await response.json();
+            console.log('Cards API Error:', errorData);
+        }
+    } catch (error) {
+        console.error('Cards API Network error:', error);
+    }
+}
+
+// Add to window for debugging
+window.testCardAPI = testCardAPI;
+EOF < /dev/null

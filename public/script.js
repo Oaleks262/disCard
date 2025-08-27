@@ -2857,4 +2857,3 @@ async function testCardAPI() {
 
 // Add to window for debugging
 window.testCardAPI = testCardAPI;
-EOF < /dev/null

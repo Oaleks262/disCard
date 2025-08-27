@@ -55,14 +55,30 @@ app.use(expressWinston.logger({
 // Trust proxy (важливо для HTTPS/rate limiting)
 app.set('trust proxy', 1);
 
-// Security middleware - minimal for HTTP
+// Security middleware for HTTPS production
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://unpkg.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      mediaSrc: ["'self'", "blob:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      fontSrc: ["'self'", "data:", "https:"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
   crossOriginEmbedderPolicy: false,
-  crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: false,
-  hsts: false,
-  originAgentCluster: false
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // MongoDB sanitization
@@ -93,7 +109,7 @@ app.use(session({
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? 
-    [process.env.FRONTEND_URL, 'http://78.27.236.157:2804', 'https://78.27.236.157:2804'] : 
+    [process.env.FRONTEND_URL] : 
     ['http://localhost:2804', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

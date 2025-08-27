@@ -19,47 +19,9 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/style.css">
     
-    <!-- External Libraries - Local fallback -->
-    <script>
-        // Load libraries with fallback
-        (function() {
-            // Load Quagga
-            var quaggaScript = document.createElement('script');
-            quaggaScript.src = '/libs/quagga.min.js';
-            quaggaScript.onerror = function() {
-                console.warn('Local Quagga failed, trying CDN...');
-                var fallback = document.createElement('script');
-                fallback.src = 'https://unpkg.com/quagga@0.12.1/dist/quagga.min.js';
-                fallback.onerror = function() {
-                    console.error('Quagga library failed to load');
-                };
-                document.head.appendChild(fallback);
-            };
-            document.head.appendChild(quaggaScript);
-            
-            // Load jsQR
-            var jsQRScript = document.createElement('script');
-            jsQRScript.src = '/libs/jsqr.min.js';
-            jsQRScript.onerror = function() {
-                console.warn('Local jsQR failed, trying CDN...');
-                var fallback = document.createElement('script');
-                fallback.src = 'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';
-                fallback.onerror = function() {
-                    console.error('jsQR library failed to load');
-                };
-                document.head.appendChild(fallback);
-            };
-            document.head.appendChild(jsQRScript);
-            
-            // Load QRCode (for generation, not scanning)
-            var qrcodeScript = document.createElement('script');
-            qrcodeScript.src = 'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js';
-            qrcodeScript.onerror = function() {
-                console.warn('QRCode generation library failed to load');
-            };
-            document.head.appendChild(qrcodeScript);
-        })();
-    </script>
+    <!-- Local Libraries -->
+    <script src="/libs/quagga.min.js"></script>
+    <script src="/libs/jsqr.min.js"></script>
 </head>
 <body>
     <div id="app">

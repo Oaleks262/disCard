@@ -10,8 +10,8 @@ const STATIC_ASSETS = [
     '/style.css',
     '/script.js',
     '/manifest.json',
-    'https://unpkg.com/quagga@0.12.1/dist/quagga.min.js',
-    'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js'
+    '/libs/quagga.min.js',
+    '/libs/jsqr.min.js'
 ];
 
 // API endpoints to cache

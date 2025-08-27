@@ -2831,7 +2831,7 @@ async function testCardAPI() {
     console.log('Testing card API...');
     console.log('Current user:', currentUser);
     
-    if (\!currentUser) {
+    if (!currentUser) {
         console.log('No user logged in');
         return;
     }

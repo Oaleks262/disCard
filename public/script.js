@@ -138,7 +138,6 @@ const translations = {
             name_placeholder: "Наприклад: АТБ, Сільпо, Rozetka",
             code: "Номер картки",
             code_placeholder: "Введіть номер або скануйте",
-            code_type: "Тип коду",
             barcode: "Штрих-код",
             qr_code: "QR-код",
             scan: "Сканувати",
@@ -147,7 +146,9 @@ const translations = {
         scanner: {
             title: "Сканування коду",
             switch_camera: "Перемкнути камеру",
-            flash: "Спалах"
+            flash: "Спалах",
+            take_photo: "Зробити фото",
+            manual_input: "Ввести вручну"
         },
         card_modal: {
             title: "Картка",
@@ -319,7 +320,6 @@ const translations = {
             name_placeholder: "e.g.: Walmart, Target, Amazon",
             code: "Card Number",
             code_placeholder: "Enter number or scan",
-            code_type: "Code Type",
             barcode: "Barcode",
             qr_code: "QR Code",
             scan: "Scan",
@@ -328,7 +328,9 @@ const translations = {
         scanner: {
             title: "Code Scanner",
             switch_camera: "Switch Camera",
-            flash: "Flash"
+            flash: "Flash",
+            take_photo: "Take Photo",
+            manual_input: "Enter Manually"
         },
         card_modal: {
             title: "Card",
@@ -475,49 +477,78 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initializeApp() {
     console.log('🚀 Ініціалізація додатку...');
     
-    // Initialize language first
-    initializeLanguage();
-    
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-        try {
-            await navigator.serviceWorker.register('/sw.js');
-            console.log('✅ Service Worker зареєстровано');
-        } catch (error) {
-            console.warn('⚠️ Помилка реєстрації Service Worker:', error);
-        }
-    }
-
-    // Initialize theme
-    initializeTheme();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Check authentication (now uses secure cookies instead of localStorage)
     try {
-        const response = await fetch(`${API_BASE}/cards`, {
-            credentials: 'include' // Include cookies
-        });
+        // Initialize language first
+        initializeLanguage();
         
-        if (response.ok) {
-            const data = await response.json();
-            userCards = data.cards;
-            await showPage('cards');
-            return;
-        } else if (response.status === 423) {
-            // Account locked
-            const errorData = await response.json();
-            showNotification(errorData.error, 'error');
-            await showPage('login');
-            return;
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            try {
+                await navigator.serviceWorker.register('/sw.js');
+                console.log('✅ Service Worker зареєстровано');
+            } catch (error) {
+                console.warn('⚠️ Помилка реєстрації Service Worker:', error);
+            }
         }
-    } catch (error) {
-        console.warn('⚠️ Помилка перевірки автентифікації:', error);
-    }
+
+        // Initialize theme
+        initializeTheme();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Check authentication (now uses secure cookies instead of localStorage)
+        try {
+            console.log('🔍 Перевіряю автентифікацію...');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд timeout
+            
+            const response = await fetch(`${API_BASE}/cards`, {
+                credentials: 'include', // Include cookies
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            console.log('📡 Отримав відповідь:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Користувач автентифікований, карт:', data.cards?.length || 0);
+                userCards = data.cards;
+                await showPage('cards');
+                return;
+            } else if (response.status === 423) {
+                // Account locked
+                const errorData = await response.json();
+                console.log('🔒 Акаунт заблокований');
+                showNotification(errorData.error, 'error');
+                await showPage('login');
+                return;
+            } else {
+                console.log('❌ Не автентифікований, статус:', response.status);
+            }
+        } catch (error) {
+            console.warn('⚠️ Помилка перевірки автентифікації:', error);
+            if (error.name === 'AbortError') {
+                console.error('⏰ Timeout при перевірці автентифікації');
+            }
+        }
     
-    // Show login page
-    await showPage('login');
+        // Show login page
+        console.log('🔑 Показую сторінку входу');
+        await showPage('login');
+    } catch (initError) {
+        console.error('❌ Критична помилка ініціалізації:', initError);
+        // Fallback - показати сторінку входу навіть якщо щось пішло не так
+        try {
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('login-page').style.display = 'block';
+        } catch (fallbackError) {
+            console.error('💥 Повний крах додатку:', fallbackError);
+            document.body.innerHTML = '<h1>Помилка завантаження додатку. Перезавантажте сторінку.</h1>';
+        }
+    }
 }
 
 // Theme Management
@@ -586,6 +617,8 @@ function setupEventListeners() {
     
     // Shopping list buttons
     document.getElementById('add-shopping-list-btn')?.addEventListener('click', showAddShoppingList);
+    document.getElementById('add-shopping-list-btn-inline')?.addEventListener('click', showAddShoppingList);
+    document.getElementById('cancel-shopping-list-btn')?.addEventListener('click', goToShopping);
     document.getElementById('back-to-shopping')?.addEventListener('click', goToShopping);
     document.getElementById('back-to-shopping-lists')?.addEventListener('click', goToShopping);
     document.getElementById('edit-list-btn')?.addEventListener('click', editCurrentList);
@@ -658,6 +691,7 @@ function setupEventListeners() {
     
     // Cards page
     document.getElementById('add-card-btn')?.addEventListener('click', showAddCard);
+    document.getElementById('add-card-btn-inline')?.addEventListener('click', showAddCard);
     document.getElementById('search-cards')?.addEventListener('input', searchCards);
     document.getElementById('security-settings-btn')?.addEventListener('click', showSecuritySettings);
     
@@ -669,8 +703,20 @@ function setupEventListeners() {
     
     // Scanner modal
     document.getElementById('close-scanner')?.addEventListener('click', closeScanner);
+    document.getElementById('take-photo-btn')?.addEventListener('click', takePhotoAndScan);
     document.getElementById('toggle-camera')?.addEventListener('click', toggleCamera);
     document.getElementById('toggle-flash')?.addEventListener('click', toggleFlash);
+    document.getElementById('manual-input-btn')?.addEventListener('click', () => {
+        closeScanner();
+        // Focus on card code input field
+        setTimeout(() => {
+            const codeInput = document.getElementById('card-code');
+            if (codeInput) {
+                codeInput.focus();
+                showNotification('Введіть код вручну', 'info');
+            }
+        }, 100);
+    });
     
     // Card modal
     document.getElementById('close-card-modal')?.addEventListener('click', closeCardModal);
@@ -992,7 +1038,7 @@ function renderCards(cards = userCards) {
     grid.style.display = 'grid';
     
     grid.innerHTML = cards.map(card => `
-        <div class="card" onclick="showCard('${card._id}')" data-card-id="${card._id}">
+        <div class="card" data-card-id="${card._id}">
             <div class="card-header">
                 <div class="card-title">${escapeHtml(card.name)}</div>
                 <div class="card-type">${card.codeType === 'qr' ? 'QR' : 'Штрих-код'}</div>
@@ -1004,9 +1050,16 @@ function renderCards(cards = userCards) {
         </div>
     `).join('');
     
-    // Add animation
+    // Add click event listeners and animation
     const cardElements = grid.querySelectorAll('.card');
     cardElements.forEach((card, index) => {
+        // Add click event listener
+        card.addEventListener('click', () => {
+            const cardId = card.dataset.cardId;
+            showCard(cardId);
+        });
+        
+        // Add animation
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         setTimeout(() => {
@@ -1057,7 +1110,10 @@ async function handleAddCard(e) {
     
     const name = document.getElementById('card-name').value.trim();
     const code = document.getElementById('card-code').value.trim();
-    const codeType = document.querySelector('input[name="code-type"]:checked').value;
+    const codeInput = document.getElementById('card-code');
+    
+    // Use previously detected type from scanning or detect it now
+    const codeType = codeInput.dataset.codeType || detectCodeType(code);
     
     if (!name || !code) {
         showNotification(getTranslation('messages.fill_all_fields'), 'error');
@@ -1152,25 +1208,36 @@ async function showCard(cardId) {
     
     try {
         if (card.codeType === 'qr') {
-            // Generate QR code
-            const canvas = await QRCode.toCanvas(card.code, {
-                width: 256,
-                height: 256,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            display.appendChild(canvas);
+            // Generate QR code using external library
+            if (typeof QRCode !== 'undefined') {
+                const canvas = await QRCode.toCanvas(card.code, {
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                display.appendChild(canvas);
+            } else {
+                // Fallback: use online QR generator
+                const qrImg = document.createElement('img');
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(card.code)}`;
+                qrImg.alt = 'QR Code';
+                qrImg.style.width = '256px';
+                qrImg.style.height = '256px';
+                display.appendChild(qrImg);
+            }
         } else {
-            // Generate barcode using simple canvas implementation
-            const canvas = generateBarcode(card.code);
+            // Generate barcode using enhanced canvas implementation
+            const canvas = generateEnhancedBarcode(card.code);
             if (canvas) {
                 display.appendChild(canvas);
             } else {
+                // Fallback: display as styled text
                 display.innerHTML = `
-                    <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">
-                        <p>📱 Штрих-код</p>
-                        <p style="font-family: monospace; font-size: 1.2rem; margin-top: 1rem;">${escapeHtml(card.code)}</p>
+                    <div class="barcode-fallback">
+                        <div class="barcode-lines"></div>
+                        <div class="barcode-text">${escapeHtml(card.code)}</div>
                     </div>
                 `;
             }
@@ -1198,8 +1265,82 @@ function closeCardModal() {
     document.getElementById('card-modal').style.display = 'none';
 }
 
-// Simple barcode generation (Code 128 simulation)
-function generateBarcode(text) {
+// Enhanced barcode generation 
+function generateEnhancedBarcode(text) {
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = 350;
+        canvas.height = 120;
+        
+        // Fill background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw bars based on Code 128 simulation
+        ctx.fillStyle = '#000000';
+        const startX = 30;
+        const barHeight = 70;
+        let x = startX;
+        
+        // Start pattern
+        const patterns = [
+            [2,1,2,3,2,1], // Start pattern
+            ...generateBarcodePattern(text),
+            [2,3,3,1,1,1,2] // Stop pattern
+        ];
+        
+        const barWidth = Math.min(2, (canvas.width - 60) / (patterns.flat().reduce((a, b) => a + b, 0)));
+        
+        patterns.forEach(pattern => {
+            pattern.forEach((width, index) => {
+                if (index % 2 === 0) { // Even indices are bars (black)
+                    ctx.fillRect(x, 20, width * barWidth, barHeight);
+                }
+                x += width * barWidth;
+            });
+        });
+        
+        // Draw text below
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, canvas.width / 2, canvas.height - 15);
+        
+        return canvas;
+    } catch (error) {
+        console.error('Enhanced barcode generation error:', error);
+        return generateSimpleBarcode(text); // Fallback
+    }
+}
+
+function generateBarcodePattern(text) {
+    // Simple pattern generation based on character codes
+    const patterns = [];
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const code = char.charCodeAt(0);
+        
+        // Generate pattern based on character
+        if (/\d/.test(char)) {
+            // Number patterns
+            const patterns_digits = [
+                [3,2,1,1], [2,2,2,1], [2,1,2,2], [1,4,1,1], [1,1,3,2],
+                [1,2,3,1], [1,1,1,4], [1,3,1,2], [1,2,1,3], [3,1,1,2]
+            ];
+            patterns.push(patterns_digits[parseInt(char)]);
+        } else {
+            // Letter patterns (simplified)
+            const base = [2,1,2,2,1,1];
+            const variation = code % 4;
+            patterns.push(base.map(w => w + (variation % 2)));
+        }
+    }
+    return patterns;
+}
+
+function generateSimpleBarcode(text) {
     try {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -1211,35 +1352,31 @@ function generateBarcode(text) {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        // Draw bars
+        // Draw simple bars
         ctx.fillStyle = '#000000';
         let x = 20;
         const barWidth = 2;
         const barHeight = 60;
         
-        // Simple pattern based on text
         for (let i = 0; i < text.length && x < canvas.width - 20; i++) {
             const charCode = text.charCodeAt(i);
-            const pattern = charCode % 10;
-            
-            for (let j = 0; j < pattern + 1; j++) {
-                if (j % 2 === 0) {
-                    ctx.fillRect(x, 20, barWidth, barHeight);
-                }
-                x += barWidth;
+            const pattern = (charCode % 8) + 2; // 2-9 bars per character
+            for (let j = 0; j < pattern; j++) {
+                ctx.fillRect(x, 20, barWidth, barHeight);
+                x += barWidth * 2;
             }
-            x += barWidth; // space between characters
+            x += barWidth;
         }
         
-        // Draw text below
+        // Draw text
         ctx.fillStyle = '#000000';
-        ctx.font = '14px monospace';
+        ctx.font = '12px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(text, canvas.width / 2, 95);
+        ctx.fillText(text, canvas.width / 2, canvas.height - 10);
         
         return canvas;
     } catch (error) {
-        console.error('Barcode generation error:', error);
+        console.error('Simple barcode generation error:', error);
         return null;
     }
 }
@@ -1248,7 +1385,30 @@ function generateBarcode(text) {
 function showScanner() {
     const modal = document.getElementById('scanner-modal');
     modal.style.display = 'flex';
-    initializeScanner();
+    initializeCameraPreview();
+}
+
+async function initializeCameraPreview() {
+    try {
+        const video = document.getElementById('scanner-video');
+        
+        // Get user media
+        currentStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment', // Back camera
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        
+        video.srcObject = currentStream;
+        video.play();
+        
+    } catch (error) {
+        console.error('Camera access error:', error);
+        showNotification(getTranslation('messages.camera_error'), 'error');
+        closeScanner();
+    }
 }
 
 async function initializeScanner() {
@@ -1505,6 +1665,208 @@ function closeScanner() {
     if (flashBtn) {
         flashBtn.textContent = '💡 Спалах';
     }
+}
+
+// Photo Scanner
+async function takePhotoAndScan() {
+    try {
+        const video = document.getElementById('scanner-video');
+        
+        if (!video || !video.videoWidth || !video.videoHeight) {
+            showNotification('Камера не готова. Спробуйте ще раз.', 'warning');
+            return;
+        }
+
+        showNotification('Обробляю фото...', 'info');
+
+        // Create canvas to capture photo
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        ctx.drawImage(video, 0, 0);
+        
+        // Get image data for scanning
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
+        let codeFound = false;
+        
+        // Try QR code scanning first
+        if (typeof jsQR !== 'undefined') {
+            const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
+            if (qrResult && qrResult.data) {
+                processScannedCode(qrResult.data);
+                codeFound = true;
+                return;
+            }
+        }
+        
+        // Try barcode scanning with Quagga - enhanced config
+        if (typeof Quagga !== 'undefined' && !codeFound) {
+            const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+            
+            // Debug: show captured image (remove in production)
+            console.log('Captured image size:', canvas.width, 'x', canvas.height);
+            
+            Quagga.decodeSingle({
+                src: dataURL,
+                numOfWorkers: 0,
+                inputStream: {
+                    size: Math.min(canvas.width, canvas.height)
+                },
+                locator: {
+                    patchSize: "large",
+                    halfSample: false
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader", 
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ],
+                    multiple: false
+                },
+                locate: true,
+                debug: {
+                    showCanvas: false,
+                    showPatches: false,
+                    showFoundPatches: false,
+                    showSkeleton: false,
+                    showLabels: false,
+                    showPatchLabels: false,
+                    showRemainingPatchLabels: false,
+                    boxFromPatches: {
+                        showTransformed: false,
+                        showTransformedBox: false,
+                        showBB: false
+                    }
+                }
+            }, (result) => {
+                console.log('Quagga result:', result);
+                if (result && result.codeResult && result.codeResult.code) {
+                    const code = result.codeResult.code.trim();
+                    console.log('Found code:', code, 'Length:', code.length);
+                    if (code.length >= 3) {
+                        processScannedCode(code);
+                        codeFound = true;
+                    } else {
+                        showNotification('Штрих-код занадто короткий. Спробуйте ще раз.', 'warning');
+                    }
+                } else {
+                    console.log('No code found, trying alternative processing');
+                    // Try with different processing
+                    setTimeout(() => tryAlternativeProcessing(canvas), 500);
+                }
+            });
+        } else if (!codeFound) {
+            showNotification('Сканер не доступний', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Photo scan error:', error);
+        showNotification('Помилка сканування фото', 'error');
+    }
+}
+
+function tryAlternativeProcessing(canvas) {
+    const ctx = canvas.getContext('2d');
+    
+    // Try with increased contrast
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Enhance contrast
+    for (let i = 0; i < data.length; i += 4) {
+        // Convert to grayscale and increase contrast
+        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        const enhanced = gray > 128 ? 255 : 0;
+        data[i] = enhanced;     // red
+        data[i + 1] = enhanced; // green
+        data[i + 2] = enhanced; // blue
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+    const enhancedDataURL = canvas.toDataURL('image/jpeg', 1.0);
+    
+    Quagga.decodeSingle({
+        src: enhancedDataURL,
+        numOfWorkers: 0,
+        locator: {
+            patchSize: "x-large",
+            halfSample: false
+        },
+        decoder: {
+            readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
+        }
+    }, (result) => {
+        console.log('Alternative processing result:', result);
+        if (result && result.codeResult && result.codeResult.code) {
+            const code = result.codeResult.code.trim();
+            console.log('Alternative found code:', code);
+            if (code.length >= 3) {
+                processScannedCode(code);
+            } else {
+                showNotification('Штрих-код не знайдено. Спробуйте змінити кут або освітлення.', 'warning');
+            }
+        } else {
+            showNotification('Штрих-код не знайдено. Спробуйте змінити кут або освітлення.', 'warning');
+        }
+    });
+}
+
+function processScannedCode(code) {
+    console.log('Processing scanned code:', code);
+    // Fill the card code input field
+    const codeInput = document.getElementById('card-code');
+    if (codeInput) {
+        codeInput.value = code;
+        
+        // Set the detected code type as a data attribute for later use
+        const detectedType = detectCodeType(code);
+        codeInput.dataset.codeType = detectedType;
+        
+        showNotification(`Код отримано: ${code}`, 'success');
+        closeScanner();
+    } else {
+        console.error('Card code input not found');
+        showNotification('Помилка: поле для коду не знайдено', 'error');
+    }
+}
+
+function detectCodeType(code) {
+    // Simple heuristics to detect code type
+    if (!code) return 'barcode';
+    
+    // QR codes are typically longer and can contain URLs, special characters
+    if (code.length > 30 || 
+        code.includes('http') || 
+        code.includes('://') ||
+        code.includes('\n') ||
+        /[^a-zA-Z0-9\-_.]/.test(code)) {
+        return 'qr';
+    }
+    
+    // Numeric codes are typically barcodes
+    if (/^\d+$/.test(code)) {
+        return 'barcode';
+    }
+    
+    // Mixed alphanumeric, relatively short - probably barcode
+    if (code.length <= 30 && /^[a-zA-Z0-9\-_]+$/.test(code)) {
+        return 'barcode';
+    }
+    
+    // Default to barcode
+    return 'barcode';
 }
 
 // Notifications
@@ -1886,7 +2248,7 @@ function renderShoppingLists(lists = shoppingLists) {
         const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
         
         return `
-            <div class="shopping-list-card" onclick="openShoppingListDetail('${list._id}')">
+            <div class="shopping-list-card" data-list-id="${list._id}">
                 <div class="list-header">
                     <div>
                         <div class="list-name">${escapeHtml(list.name)}</div>
@@ -1907,6 +2269,15 @@ function renderShoppingLists(lists = shoppingLists) {
             </div>
         `;
     }).join('');
+    
+    // Add click event listeners to shopping list cards
+    const listCards = grid.querySelectorAll('.shopping-list-card');
+    listCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const listId = card.dataset.listId;
+            openShoppingListDetail(listId);
+        });
+    });
 }
 
 function searchShoppingLists() {
@@ -2011,10 +2382,10 @@ function renderShoppingItems() {
     }
     
     container.innerHTML = currentList.items.map(item => `
-        <div class="shopping-item ${item.completed ? 'completed' : ''}">
+        <div class="shopping-item ${item.completed ? 'completed' : ''}" data-item-id="${item._id}">
             <input type="checkbox" class="item-checkbox" 
                    ${item.completed ? 'checked' : ''} 
-                   onchange="toggleItemCompleted('${item._id}')">
+                   data-item-id="${item._id}">
             <div class="item-details">
                 <div class="item-name">${escapeHtml(item.name)}</div>
                 <div class="item-quantity">${escapeHtml(item.quantity)}</div>
@@ -2022,10 +2393,25 @@ function renderShoppingItems() {
                 <div class="item-price">${item.price ? item.price + ' грн' : '--'}</div>
             </div>
             <div class="item-actions">
-                <button class="btn-icon-small" onclick="deleteShoppingItem('${item._id}')" title="Видалити">🗑️</button>
+                <button class="btn-icon-small delete-item-btn" data-item-id="${item._id}" title="Видалити">🗑️</button>
             </div>
         </div>
     `).join('');
+    
+    // Add event listeners for checkboxes and delete buttons
+    container.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const itemId = e.target.dataset.itemId;
+            toggleItemCompleted(itemId);
+        });
+    });
+    
+    container.querySelectorAll('.delete-item-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const itemId = e.target.dataset.itemId;
+            deleteShoppingItem(itemId);
+        });
+    });
 }
 
 async function addShoppingItem(event) {
@@ -2502,12 +2888,20 @@ function displayFriends() {
                 </div>
             </div>
             <div class="friend-actions">
-                <button onclick="removeFriend('${friend.friendshipId}')" class="btn btn-danger btn-sm">
+                <button class="btn btn-danger btn-sm remove-friend-btn" data-friendship-id="${friend.friendshipId}">
                     ${t.friends.remove_friend}
                 </button>
             </div>
         </div>
     `).join('');
+    
+    // Add event listeners for remove friend buttons
+    friendsList.querySelectorAll('.remove-friend-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const friendshipId = e.target.dataset.friendshipId;
+            removeFriend(friendshipId);
+        });
+    });
 }
 
 function displayFriendRequests() {
@@ -2536,15 +2930,30 @@ function displayFriendRequests() {
                     </div>
                 </div>
                 <div class="request-actions">
-                    <button onclick="acceptFriendRequest('${request.id}')" class="btn btn-success btn-sm">
+                    <button class="btn btn-success btn-sm accept-request-btn" data-request-id="${request.id}">
                         ${t.friends.accept_request}
                     </button>
-                    <button onclick="rejectFriendRequest('${request.id}')" class="btn btn-danger btn-sm">
+                    <button class="btn btn-danger btn-sm reject-request-btn" data-request-id="${request.id}">
                         ${t.friends.reject_request}
                     </button>
                 </div>
             </div>
         `).join('');
+        
+        // Add event listeners for friend request buttons
+        receivedRequests.querySelectorAll('.accept-request-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const requestId = e.target.dataset.requestId;
+                acceptFriendRequest(requestId);
+            });
+        });
+        
+        receivedRequests.querySelectorAll('.reject-request-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const requestId = e.target.dataset.requestId;
+                rejectFriendRequest(requestId);
+            });
+        });
     }
     
     // Display sent requests
@@ -2589,7 +2998,7 @@ async function searchUserById(userId) {
             
             switch (user.friendshipStatus) {
                 case 'none':
-                    actionButton = `<button onclick="sendFriendRequest('${user.id}')" class="btn btn-primary">
+                    actionButton = `<button class="btn btn-primary send-friend-request-btn" data-user-id="${user.id}">
                         ${t.friends.send_request}
                     </button>`;
                     break;
@@ -2621,6 +3030,15 @@ async function searchUserById(userId) {
                 </div>
             `;
             searchResult.style.display = 'block';
+            
+            // Add event listener for send friend request button
+            const sendRequestBtn = searchResult.querySelector('.send-friend-request-btn');
+            if (sendRequestBtn) {
+                sendRequestBtn.addEventListener('click', (e) => {
+                    const userId = e.target.dataset.userId;
+                    sendFriendRequest(userId);
+                });
+            }
         } else {
             const data = await response.json();
             searchResult.innerHTML = `<p class="error">${data.error || t.friends.user_not_found}</p>`;
@@ -2788,11 +3206,19 @@ function showShareListModal() {
                         <p>${friend.email}</p>
                     </div>
                 </div>
-                <button onclick="shareWithFriend('${friend.id}')" class="btn btn-primary btn-sm">
+                <button class="btn btn-primary btn-sm share-with-friend-btn" data-friend-id="${friend.id}">
                     Поділитися
                 </button>
             </div>
         `).join('');
+        
+        // Add event listeners for share buttons
+        friendsContainer.querySelectorAll('.share-with-friend-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const friendId = e.target.dataset.friendId;
+                shareWithFriend(friendId);
+            });
+        });
     }
     
     loadCurrentSharedInfo();
@@ -2826,34 +3252,3 @@ window.debugApp = {
     logout
 };
 
-// Test function for debugging card API
-async function testCardAPI() {
-    console.log('Testing card API...');
-    console.log('Current user:', currentUser);
-    
-    if (!currentUser) {
-        console.log('No user logged in');
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE}/cards`, {
-            credentials: 'include'
-        });
-        
-        console.log('Cards API Response status:', response.status);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Cards API Response data:', data);
-        } else {
-            const errorData = await response.json();
-            console.log('Cards API Error:', errorData);
-        }
-    } catch (error) {
-        console.error('Cards API Network error:', error);
-    }
-}
-
-// Add to window for debugging
-window.testCardAPI = testCardAPI;

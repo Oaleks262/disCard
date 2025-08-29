@@ -22,6 +22,7 @@
     <!-- Local Libraries -->
     <script src="/libs/quagga.min.js"></script>
     <script src="/libs/jsqr.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
     <div id="app">
@@ -164,7 +165,7 @@
                     <div class="empty-icon">💳</div>
                     <h3 data-translate="cards.no_cards">Немає карт</h3>
                     <p data-translate="cards.add_first_card">Додайте свою першу карту лояльності</p>
-                    <button class="btn btn-primary" onclick="showAddCard()" data-translate="cards.add_card">Додати картку</button>
+                    <button class="btn btn-primary" id="add-card-btn-inline" data-translate="cards.add_card">Додати картку</button>
                 </div>
             </div>
         </div>
@@ -198,19 +199,6 @@
                         </small>
                     </div>
 
-                    <div class="form-group">
-                        <label data-translate="add_card.code_type">Тип коду</label>
-                        <div class="radio-group">
-                            <label class="radio-label">
-                                <input type="radio" name="code-type" value="barcode" checked>
-                                <span data-translate="add_card.barcode">Штрих-код</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="code-type" value="qr">
-                                <span data-translate="add_card.qr_code">QR-код</span>
-                            </label>
-                        </div>
-                    </div>
 
                     <div class="form-actions">
                         <button type="button" id="cancel-add-card" class="btn btn-secondary" data-translate="common.cancel">Скасувати</button>
@@ -234,9 +222,23 @@
                             <div class="scan-frame"></div>
                         </div>
                     </div>
+                    <div class="code-type-selector">
+                        <label>
+                            <input type="radio" name="code-type" value="barcode" checked>
+                            <span data-translate="add_card.barcode">Штрих-код</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="code-type" value="qr">
+                            <span data-translate="add_card.qr_code">QR-код</span>
+                        </label>
+                    </div>
                     <div class="scanner-controls">
+                        <button id="take-photo-btn" class="btn btn-primary">📷 <span data-translate="scanner.take_photo">Зробити фото</span></button>
                         <button id="toggle-camera" class="btn btn-secondary">🔄 <span data-translate="scanner.switch_camera">Перемкнути камеру</span></button>
                         <button id="toggle-flash" class="btn btn-secondary">💡 <span data-translate="scanner.flash">Спалах</span></button>
+                    </div>
+                    <div class="manual-input">
+                        <button id="manual-input-btn" class="btn btn-outline">⌨️ <span data-translate="scanner.manual_input">Ввести вручну</span></button>
                     </div>
                 </div>
             </div>
@@ -404,7 +406,7 @@
                     <div class="empty-icon">🛒</div>
                     <h3 data-translate="shopping.no_lists">Немає списків покупок</h3>
                     <p data-translate="shopping.add_first_list">Створіть свій перший список покупок</p>
-                    <button class="btn btn-primary" onclick="showAddShoppingList()" data-translate="shopping.add_list">Новий список</button>
+                    <button class="btn btn-primary" id="add-shopping-list-btn-inline" data-translate="shopping.add_list">Новий список</button>
                 </div>
             </div>
         </div>
@@ -445,7 +447,7 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" onclick="goToShopping()" class="btn btn-secondary" data-translate="common.cancel">Скасувати</button>
+                        <button type="button" id="cancel-shopping-list-btn" class="btn btn-secondary" data-translate="common.cancel">Скасувати</button>
                         <button type="submit" class="btn btn-primary" data-translate="shopping.create_list">Створити список</button>
                     </div>
                 </form>
@@ -740,6 +742,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/script.js"></script>
+    <script src="/script.js?v=10"></script>
 </body>
 </html>

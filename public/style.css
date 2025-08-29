@@ -773,11 +773,47 @@ body {
     }
 }
 
+.code-type-selector {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background: var(--surface-secondary);
+    border-radius: var(--border-radius-sm);
+}
+
+.code-type-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    transition: var(--transition-fast);
+}
+
+.code-type-selector label:hover {
+    background: var(--surface-color);
+}
+
+.code-type-selector input[type="radio"] {
+    margin: 0;
+}
+
 .scanner-controls {
     display: flex;
     gap: 1rem;
     justify-content: center;
     margin-top: 1rem;
+}
+
+.manual-input {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Card Display */
@@ -795,9 +831,45 @@ body {
 }
 
 #card-code-display canvas,
-#card-code-display svg {
+#card-code-display svg,
+#card-code-display img {
     max-width: 100%;
     height: auto;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius-sm);
+}
+
+.barcode-fallback {
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--surface-color);
+    margin: 1rem 0;
+}
+
+.barcode-lines {
+    height: 60px;
+    background: linear-gradient(90deg, 
+        #000 0px, #000 2px, #fff 2px, #fff 4px,
+        #000 4px, #000 6px, #fff 6px, #fff 8px,
+        #000 8px, #000 12px, #fff 12px, #fff 14px,
+        #000 14px, #000 16px, #fff 16px, #fff 20px,
+        #000 20px, #000 22px, #fff 22px, #fff 24px,
+        #000 24px, #000 28px, #fff 28px, #fff 30px,
+        #000 30px, #000 32px, #fff 32px, #fff 34px,
+        #000 34px, #000 38px, #fff 38px, #fff 40px
+    );
+    background-size: 40px 100%;
+    background-repeat: repeat-x;
+    margin-bottom: 1rem;
+}
+
+.barcode-text {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    letter-spacing: 2px;
 }
 
 #card-code-number {

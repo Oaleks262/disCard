@@ -548,6 +548,7 @@ const Friendship = mongoose.model('Friendship', friendshipSchema);
 const authenticateToken = async (req, res, next) => {
   try {
     let token;
+    let user = null;
     
     // Check for token in cookies first (more secure), then Authorization header
     if (req.cookies.token) {
@@ -557,43 +558,84 @@ const authenticateToken = async (req, res, next) => {
       token = authHeader && authHeader.split(' ')[1];
     }
 
-    if (!token) {
-      return res.status(401).json({ error: 'Токен доступу відсутній' });
+    // Try to verify JWT token first
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
+        user = await User.findById(decoded.userId).select('-password -twoFactorSecret');
+        
+        if (user) {
+          // Check if account is locked
+          if (user.isLocked) {
+            logger.warn(`Locked account attempted access: ${user.email}`);
+            return res.status(423).json({ error: 'Акаунт заблокований через підозрілу активність' });
+          }
+
+          // Check if password was changed after token was issued
+          const tokenIssuedAt = new Date(decoded.iat * 1000);
+          if (user.passwordChangedAt && user.passwordChangedAt > tokenIssuedAt) {
+            logger.warn(`Token invalid due to password change: ${user.email}`);
+            user = null; // Force remember token check
+          }
+        } else {
+          logger.warn(`Invalid user ID in token: ${decoded.userId}`);
+        }
+      } catch (jwtError) {
+        logger.info(`JWT verification failed: ${jwtError.message}`);
+        // JWT invalid, try remember token
+      }
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
-    const user = await User.findById(decoded.userId).select('-password -twoFactorSecret');
-    
+    // If no valid JWT token, try remember token
+    if (!user && req.cookies.remember_token) {
+      const rememberToken = req.cookies.remember_token;
+      
+      // Find user with matching remember token
+      user = await User.findOne({
+        'rememberTokens.token': rememberToken,
+        'rememberTokens.expiresAt': { $gt: new Date() }
+      }).select('-password -twoFactorSecret');
+
+      if (user) {
+        // Check if account is locked
+        if (user.isLocked) {
+          logger.warn(`Locked account attempted access via remember token: ${user.email}`);
+          return res.status(423).json({ error: 'Акаунт заблокований через підозрілу активність' });
+        }
+
+        // Generate new JWT token
+        const newToken = jwt.sign(
+          { 
+            userId: user._id,
+            iat: Math.floor(Date.now() / 1000),
+            type: 'access',
+            remember: true
+          },
+          process.env.JWT_SECRET || 'fallback-secret',
+          { expiresIn: '1h' }
+        );
+
+        // Set new JWT cookie
+        res.cookie('token', newToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 60 * 60 * 1000 // 1 hour
+        });
+
+        logger.info(`User authenticated via remember token: ${user.email}`);
+      }
+    }
+
     if (!user) {
-      logger.warn(`Invalid user ID in token: ${decoded.userId}`);
-      return res.status(401).json({ error: 'Користувач не знайдений' });
-    }
-
-    // Check if account is locked
-    if (user.isLocked) {
-      logger.warn(`Locked account attempted access: ${user.email}`);
-      return res.status(423).json({ error: 'Акаунт заблокований через підозрілу активність' });
-    }
-
-    // Check if password was changed after token was issued
-    const tokenIssuedAt = new Date(decoded.iat * 1000);
-    if (user.passwordChangedAt && user.passwordChangedAt > tokenIssuedAt) {
-      logger.warn(`Token invalid due to password change: ${user.email}`);
-      return res.status(401).json({ error: 'Токен недійсний через зміну пароля' });
+      return res.status(401).json({ error: 'Токен доступу відсутній або недійсний' });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Токен прострочений' });
-    } else if (error.name === 'JsonWebTokenError') {
-      logger.warn(`Invalid token: ${error.message}`);
-      return res.status(403).json({ error: 'Недійсний токен' });
-    } else {
-      logger.error(`Auth middleware error: ${error.message}`);
-      return res.status(500).json({ error: 'Помилка автентифікації' });
-    }
+    logger.error(`Auth middleware error: ${error.message}`);
+    return res.status(500).json({ error: 'Помилка автентифікації' });
   }
 };
 
@@ -1337,6 +1379,25 @@ app.put('/api/user/update-password', authenticateToken, async (req, res) => {
   } catch (error) {
     logger.error('Update password error:', { error: error.message, userId: req.user._id });
     res.status(500).json({ error: 'Помилка оновлення пароля' });
+  }
+});
+
+// Check authentication status
+app.get('/api/auth/check', authenticateToken, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      authenticated: true,
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name,
+        twoFactorEnabled: req.user.twoFactorEnabled
+      }
+    });
+  } catch (error) {
+    logger.error('Auth check error:', { error: error.message });
+    res.status(500).json({ error: 'Помилка перевірки автентифікації' });
   }
 });
 

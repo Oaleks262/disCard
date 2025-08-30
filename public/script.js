@@ -497,14 +497,14 @@ async function initializeApp() {
         // Setup event listeners
         setupEventListeners();
         
-        // Check authentication (now uses secure cookies instead of localStorage)
+        // Check authentication using dedicated endpoint
         try {
             console.log('🔍 Перевіряю автентифікацію...');
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд timeout
             
-            const response = await fetch(`${API_BASE}/cards`, {
-                credentials: 'include', // Include cookies
+            const response = await fetch(`${API_BASE}/auth/check`, {
+                credentials: 'include', // Include cookies for remember token
                 signal: controller.signal
             });
             
@@ -514,8 +514,8 @@ async function initializeApp() {
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('✅ Користувач автентифікований, карт:', data.cards?.length || 0);
-                userCards = data.cards;
+                console.log('✅ Користувач автентифікований:', data.user.email);
+                currentUser = data.user;
                 await showPage('cards');
                 return;
             } else if (response.status === 423) {
@@ -1043,6 +1043,9 @@ function renderCards(cards = userCards) {
                 <div class="card-title">${escapeHtml(card.name)}</div>
                 <div class="card-type">${card.codeType === 'qr' ? 'QR' : 'Штрих-код'}</div>
             </div>
+            <div class="card-visual" id="card-visual-${card._id}">
+                <!-- QR/Barcode will be generated here -->
+            </div>
             <div class="card-code">${escapeHtml(card.code)}</div>
             <div class="card-date">
                 Додано: ${new Date(card.createdAt).toLocaleDateString('uk-UA')}
@@ -1050,6 +1053,68 @@ function renderCards(cards = userCards) {
         </div>
     `).join('');
     
+    // Generate QR codes and barcodes for cards
+    cards.forEach(async (card) => {
+        const visualContainer = document.getElementById(`card-visual-${card._id}`);
+        if (!visualContainer) return;
+        
+        try {
+            if (card.codeType === 'qr') {
+                // Generate QR code
+                if (typeof QRCode !== 'undefined') {
+                    // Create canvas element first
+                    const canvas = document.createElement('canvas');
+                    
+                    try {
+                        // Generate QR code with corrected API usage
+                        await QRCode.toCanvas(canvas, card.code, {
+                            width: 120,
+                            margin: 2,
+                            color: {
+                                dark: '#000000',
+                                light: '#ffffff'
+                            },
+                            errorCorrectionLevel: 'M'
+                        });
+                        
+                        canvas.style.maxWidth = '100%';
+                        canvas.style.height = 'auto';
+                        visualContainer.appendChild(canvas);
+                    } catch (qrError) {
+                        console.error('QR generation error:', qrError);
+                        // Fallback to online generator
+                        const qrImg = document.createElement('img');
+                        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(card.code)}`;
+                        qrImg.alt = 'QR Code';
+                        qrImg.style.maxWidth = '100%';
+                        qrImg.style.height = 'auto';
+                        visualContainer.appendChild(qrImg);
+                    }
+                } else {
+                    // Fallback: use online QR generator
+                    const qrImg = document.createElement('img');
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(card.code)}`;
+                    qrImg.alt = 'QR Code';
+                    qrImg.style.maxWidth = '100%';
+                    qrImg.style.height = 'auto';
+                    visualContainer.appendChild(qrImg);
+                }
+            } else {
+                // Generate barcode
+                const canvas = generateEnhancedBarcode(card.code, { width: 120, height: 60 });
+                if (canvas) {
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.height = 'auto';
+                    visualContainer.appendChild(canvas);
+                }
+            }
+        } catch (error) {
+            console.error('Error generating code visual:', error);
+            // Show text fallback
+            visualContainer.innerHTML = `<div class="code-fallback">${escapeHtml(card.code)}</div>`;
+        }
+    });
+
     // Add click event listeners and animation
     const cardElements = grid.querySelectorAll('.card');
     cardElements.forEach((card, index) => {
@@ -1210,14 +1275,29 @@ async function showCard(cardId) {
         if (card.codeType === 'qr') {
             // Generate QR code using external library
             if (typeof QRCode !== 'undefined') {
-                const canvas = await QRCode.toCanvas(card.code, {
-                    width: 256,
-                    height: 256,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                display.appendChild(canvas);
+                const canvas = document.createElement('canvas');
+                
+                try {
+                    await QRCode.toCanvas(canvas, card.code, {
+                        width: 256,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#ffffff'
+                        },
+                        errorCorrectionLevel: 'H'
+                    });
+                    display.appendChild(canvas);
+                } catch (qrError) {
+                    console.error('Modal QR generation error:', qrError);
+                    // Fallback to online generator
+                    const qrImg = document.createElement('img');
+                    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(card.code)}`;
+                    qrImg.alt = 'QR Code';
+                    qrImg.style.width = '256px';
+                    qrImg.style.height = '256px';
+                    display.appendChild(qrImg);
+                }
             } else {
                 // Fallback: use online QR generator
                 const qrImg = document.createElement('img');

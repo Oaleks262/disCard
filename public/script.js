@@ -14,6 +14,36 @@ let currentLanguage = 'uk'; // Default to Ukrainian
 // API Configuration
 const API_BASE = window.location.origin + '/api';
 
+// Check for updates
+async function checkForUpdates() {
+    try {
+        // Отримати поточну версію з сервера
+        const response = await fetch('/api/version');
+        const { version: currentVersion } = await response.json();
+        const savedVersion = localStorage.getItem('appVersion');
+        
+        if (savedVersion && savedVersion !== currentVersion) {
+            localStorage.setItem('appVersion', currentVersion);
+            // Очистити кеш і перезавантажити
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            }
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+            }
+            location.reload();
+        } else if (!savedVersion) {
+            localStorage.setItem('appVersion', currentVersion);
+        }
+    } catch (error) {
+        console.warn('Помилка перевірки версії:', error);
+    }
+}
+
 // Translations
 const translations = {
     uk: {
@@ -478,6 +508,9 @@ async function initializeApp() {
     console.log('🚀 Ініціалізація додатку...');
     
     try {
+        // Check for updates first
+        await checkForUpdates();
+        
         // Initialize language first
         initializeLanguage();
         
@@ -486,6 +519,7 @@ async function initializeApp() {
             try {
                 await navigator.serviceWorker.register('/sw.js');
                 console.log('✅ Service Worker зареєстровано');
+                
             } catch (error) {
                 console.warn('⚠️ Помилка реєстрації Service Worker:', error);
             }
@@ -493,6 +527,9 @@ async function initializeApp() {
 
         // Initialize theme
         initializeTheme();
+        
+        // Load saved login data
+        loadSavedLoginData();
         
         // Setup event listeners
         setupEventListeners();
@@ -638,6 +675,16 @@ function setupEventListeners() {
     // Friends functionality
     document.getElementById('add-friend-btn')?.addEventListener('click', () => {
         document.getElementById('friend-search-modal').style.display = 'block';
+    });
+    
+    // Modal close buttons
+    document.querySelectorAll('.btn-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        });
     });
     
     document.getElementById('friend-search-form')?.addEventListener('submit', (e) => {
@@ -2390,7 +2437,7 @@ function showAddShoppingList() {
 }
 
 function goToShopping() {
-    switchTab('shopping');
+    showPage('shopping');
 }
 
 async function createShoppingList(event) {
@@ -2418,7 +2465,10 @@ async function createShoppingList(event) {
         
         const data = await response.json();
         showNotification(data.message, 'success');
-        goToShopping();
+        
+        // Додати новий список до масиву та відкрити його
+        shoppingLists.push(data.list);
+        openShoppingListDetail(data.list._id);
     } catch (error) {
         console.error('Create shopping list error:', error);
         showNotification('Помилка створення списку', 'error');
@@ -2496,8 +2546,12 @@ function renderShoppingItems() {
 
 async function addShoppingItem(event) {
     event.preventDefault();
+    console.log('Add item triggered', currentList);
     
-    if (!currentList) return;
+    if (!currentList) {
+        console.error('No current list');
+        return;
+    }
     
     const form = event.target;
     const formData = new FormData(form);
@@ -2509,6 +2563,8 @@ async function addShoppingItem(event) {
         price: formData.get('price') ? parseFloat(formData.get('price')) : undefined
     };
     
+    console.log('Item data:', itemData);
+    
     try {
         const response = await fetch(`${API_BASE}/shopping-lists/${currentList._id}/items`, {
             method: 'POST',
@@ -2517,9 +2573,15 @@ async function addShoppingItem(event) {
             body: JSON.stringify(itemData)
         });
         
-        if (!response.ok) throw new Error('Failed to add item');
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to add item');
+        }
         
         const data = await response.json();
+        console.log('Server response:', data);
         currentList = data.list;
         
         // Reset form and update display
@@ -2697,6 +2759,11 @@ function resetShoppingListForm() {
     // Reset form to add mode
     form.onsubmit = createShoppingList;
     
+    // Clear form data
+    form.reset();
+    document.getElementById('list-color').value = '#10B981';
+    document.querySelector('.color-preview').style.backgroundColor = '#10B981';
+    
     if (pageTitle) {
         pageTitle.textContent = 'Новий список покупок';
     }
@@ -2728,12 +2795,42 @@ async function login(event) {
             throw new Error(data.error || 'Login failed');
         }
         
+        // Збереження даних для автозаповнення при успішному вході
+        if (rememberMe) {
+            localStorage.setItem('savedEmail', email);
+            localStorage.setItem('rememberMe', 'true');
+        } else {
+            localStorage.removeItem('savedEmail');
+            localStorage.removeItem('rememberMe');
+        }
+        
         currentUser = data.user;
         showPage('cards');
         showNotification(data.message, 'success');
     } catch (error) {
         console.error('Login error:', error);
         showNotification(error.message, 'error');
+    }
+}
+
+// Load saved login data
+function loadSavedLoginData() {
+    const savedEmail = localStorage.getItem('savedEmail');
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+    
+    if (savedEmail && rememberMe) {
+        const emailInput = document.getElementById('login-email');
+        const rememberCheckbox = document.getElementById('remember-me');
+        
+        if (emailInput && rememberCheckbox) {
+            emailInput.value = savedEmail;
+            rememberCheckbox.checked = true;
+            // Фокус на поле пароля якщо email вже заповнений
+            const passwordInput = document.getElementById('login-password');
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        }
     }
 }
 
@@ -2914,7 +3011,7 @@ async function updateUserPassword(event) {
 async function loadFriends() {
     try {
         const response = await fetch(`${API_BASE}/friends`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
         });
         
         if (response.ok) {
@@ -2930,7 +3027,7 @@ async function loadFriends() {
 async function loadFriendRequests() {
     try {
         const response = await fetch(`${API_BASE}/friends/requests`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
         });
         
         if (response.ok) {
@@ -3066,7 +3163,7 @@ async function searchUserById(userId) {
         searchResult.style.display = 'none';
         
         const response = await fetch(`${API_BASE}/friends/search/${userId}`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
         });
         
         if (response.ok) {
@@ -3132,27 +3229,34 @@ async function searchUserById(userId) {
 }
 
 async function sendFriendRequest(recipientId) {
+    console.log('Sending friend request to:', recipientId);
+    
     try {
         const response = await fetch(`${API_BASE}/friends/request`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ recipientId })
         });
         
+        console.log('Friend request response status:', response.status);
+        
         if (response.ok) {
-            showMessage(translations[currentLanguage].friends.request_sent);
+            const data = await response.json();
+            console.log('Friend request success:', data);
+            showNotification(translations[currentLanguage].friends.request_sent || 'Запит надіслано', 'success');
             document.getElementById('friend-search-modal').style.display = 'none';
             loadFriendRequests();
         } else {
             const data = await response.json();
-            showMessage(data.error, 'error');
+            console.error('Friend request error:', data);
+            showNotification(data.error || 'Помилка надсилання запиту', 'error');
         }
     } catch (error) {
         console.error('Error sending friend request:', error);
-        showMessage(translations[currentLanguage].messages.server_error, 'error');
+        showNotification('Помилка з\'єднання з сервером', 'error');
     }
 }
 
@@ -3161,9 +3265,9 @@ async function acceptFriendRequest(requestId) {
         const response = await fetch(`${API_BASE}/friends/request/${requestId}`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ action: 'accept' })
         });
         
@@ -3186,9 +3290,9 @@ async function rejectFriendRequest(requestId) {
         const response = await fetch(`${API_BASE}/friends/request/${requestId}`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ action: 'reject' })
         });
         
@@ -3213,7 +3317,7 @@ async function removeFriend(friendshipId) {
     try {
         const response = await fetch(`${API_BASE}/friends/${friendshipId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            credentials: 'include'
         });
         
         if (response.ok) {
@@ -3235,9 +3339,9 @@ async function shareShoppingList(listId, friendId, permission) {
         const response = await fetch(`${API_BASE}/shopping-lists/${listId}/share`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ friendId, permission })
         });
         

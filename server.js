@@ -2545,6 +2545,19 @@ app.delete('/api/shopping-lists/:id/items/:itemId', authenticateToken, async (re
   }
 });
 
+// Version endpoint for client updates
+app.get('/api/version', (req, res) => {
+  const { execSync } = require('child_process');
+  try {
+    const gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+    const version = `${require('./package.json').version}-${gitHash}`;
+    res.json({ version });
+  } catch (error) {
+    // Fallback to package.json version if git not available
+    res.json({ version: require('./package.json').version });
+  }
+});
+
 // Health check endpoint for monitoring
 app.get('/api/health', (req, res) => {
   const uptime = process.uptime();

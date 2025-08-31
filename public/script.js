@@ -554,6 +554,7 @@ async function initializeApp() {
                 console.log('✅ Користувач автентифікований:', data.user.email);
                 currentUser = data.user;
                 await showPage('cards');
+                loadFriends(); // Завантажити друзів для функції поділитися
                 return;
             } else if (response.status === 423) {
                 // Account locked
@@ -1284,6 +1285,7 @@ async function handleDeleteCard() {
             showNotification(getTranslation('messages.card_deleted'), 'success');
             closeCardModal();
             await loadCards();
+            showPage('cards');
         } else if (response.status === 401) {
             showPage('login');
         } else if (response.status === 423) {
@@ -2217,6 +2219,7 @@ async function loginWith2FA(email, password, twoFactorToken = null) {
         showNotification(getTranslation('messages.login_success'), 'success');
         showPage('cards');
         loadCards();
+        loadFriends(); // Завантажити друзів для функції поділитися
         
     } catch (error) {
         console.error('Login error:', error);
@@ -2341,6 +2344,7 @@ function showProfilePage() {
 // Shopping Lists Functions
 async function loadShoppingLists() {
     try {
+        // Load own lists
         const response = await fetch(`${API_BASE}/shopping-lists`, {
             credentials: 'include'
         });
@@ -2348,7 +2352,33 @@ async function loadShoppingLists() {
         if (!response.ok) throw new Error('Failed to load shopping lists');
         
         const data = await response.json();
-        shoppingLists = data.lists || [];
+        let allLists = data.lists || [];
+        
+        // Load shared lists
+        try {
+            const sharedResponse = await fetch(`${API_BASE}/shopping-lists/shared`, {
+                credentials: 'include'
+            });
+            
+            if (sharedResponse.ok) {
+                const sharedData = await sharedResponse.json();
+                const sharedLists = sharedData.lists || [];
+                console.log('Shared lists loaded:', sharedLists.length);
+                
+                // Mark shared lists and combine
+                sharedLists.forEach(list => {
+                    list.isShared = true;
+                    list.sharedBy = list.owner?.name || 'Невідомо';
+                });
+                
+                allLists = allLists.concat(sharedLists);
+            }
+        } catch (sharedError) {
+            console.log('No shared lists or error loading shared lists:', sharedError);
+        }
+        
+        shoppingLists = allLists;
+        console.log('Total lists loaded:', shoppingLists.length);
         renderShoppingLists();
     } catch (error) {
         console.error('Load shopping lists error:', error);
@@ -2378,8 +2408,12 @@ function renderShoppingLists(lists = shoppingLists) {
             <div class="shopping-list-card" data-list-id="${list._id}">
                 <div class="list-header">
                     <div>
-                        <div class="list-name">${escapeHtml(list.name)}</div>
+                        <div class="list-name">
+                            ${escapeHtml(list.name)}
+                            ${list.isShared ? '<span class="shared-badge">👥 Поділений</span>' : ''}
+                        </div>
                         ${list.description ? `<div class="list-description">${escapeHtml(list.description)}</div>` : ''}
+                        ${list.isShared ? `<div class="shared-by">Від: ${escapeHtml(list.sharedBy)}</div>` : ''}
                     </div>
                     <div class="list-color-indicator" style="background-color: ${list.color}"></div>
                 </div>
@@ -2661,8 +2695,9 @@ async function deleteCurrentList() {
         if (!response.ok) throw new Error('Failed to delete list');
         
         showNotification('Список видалено', 'success');
-        goToShopping();
+        currentList = null;
         await loadShoppingLists();
+        showPage('shopping');
     } catch (error) {
         console.error('Delete list error:', error);
         showNotification('Помилка видалення списку', 'error');
@@ -2687,15 +2722,26 @@ function editCurrentList() {
     
     // Update form action
     const form = document.getElementById('add-shopping-list-form');
-    form.onsubmit = async (event) => {
+    
+    // Remove existing listeners and add edit listener
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    newForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         await updateShoppingList(currentList._id, event);
-    };
+    });
     
     // Update submit button text
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = newForm.querySelector('button[type="submit"]');
     if (submitButton) {
         submitButton.textContent = 'Зберегти зміни';
+    }
+    
+    // Re-setup cancel button handler
+    const cancelButton = document.getElementById('cancel-shopping-list-btn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', goToShopping);
     }
     
     // Show edit page
@@ -2754,22 +2800,31 @@ async function updateShoppingList(listId, event) {
 function resetShoppingListForm() {
     const form = document.getElementById('add-shopping-list-form');
     const pageTitle = document.querySelector('#add-shopping-list-page .page-header h2');
-    const submitButton = form.querySelector('button[type="submit"]');
     
-    // Reset form to add mode
-    form.onsubmit = createShoppingList;
+    // Remove existing listeners and add create listener
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    newForm.addEventListener('submit', createShoppingList);
     
     // Clear form data
-    form.reset();
-    document.getElementById('list-color').value = '#10B981';
+    newForm.reset();
+    newForm.querySelector('#list-color').value = '#10B981';
     document.querySelector('.color-preview').style.backgroundColor = '#10B981';
     
     if (pageTitle) {
         pageTitle.textContent = 'Новий список покупок';
     }
     
+    const submitButton = newForm.querySelector('button[type="submit"]');
     if (submitButton) {
         submitButton.textContent = 'Створити список';
+    }
+    
+    // Re-setup cancel button handler
+    const cancelButton = document.getElementById('cancel-shopping-list-btn');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', goToShopping);
     }
 }
 
@@ -3335,6 +3390,8 @@ async function removeFriend(friendshipId) {
 
 // Shopping list sharing functions
 async function shareShoppingList(listId, friendId, permission) {
+    console.log('Sharing list:', listId, 'with friend:', friendId, 'permission:', permission);
+    
     try {
         const response = await fetch(`${API_BASE}/shopping-lists/${listId}/share`, {
             method: 'POST',
@@ -3345,18 +3402,24 @@ async function shareShoppingList(listId, friendId, permission) {
             body: JSON.stringify({ friendId, permission })
         });
         
+        console.log('Share response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
-            showMessage(data.message);
+            console.log('Share success:', data);
+            showNotification(data.message || 'Список поділено успішно', 'success');
             document.getElementById('share-list-modal').style.display = 'none';
             loadCurrentSharedInfo();
+            // Перезавантажити списки для відображення в списку друга
+            loadShoppingLists();
         } else {
             const data = await response.json();
-            showMessage(data.error, 'error');
+            console.error('Share error:', data);
+            showNotification(data.error || 'Помилка поділу списку', 'error');
         }
     } catch (error) {
         console.error('Error sharing list:', error);
-        showMessage(translations[currentLanguage].messages.server_error, 'error');
+        showNotification('Помилка з\'єднання з сервером', 'error');
     }
 }
 
@@ -3374,6 +3437,7 @@ async function loadCurrentSharedInfo() {
 }
 
 function showShareListModal() {
+    console.log('Opening share modal, friends:', friends);
     const modal = document.getElementById('share-list-modal');
     const friendsContainer = document.getElementById('friends-to-share');
     

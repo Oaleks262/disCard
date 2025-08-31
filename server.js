@@ -185,8 +185,9 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ Помилка MongoDB:', err);
 });
 
-// User Schema with enhanced security
+// Optimized User Schema with embedded data
 const userSchema = new mongoose.Schema({
+  // Basic user info
   email: {
     type: String,
     required: true,
@@ -207,159 +208,142 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 8
   },
-  // Account lockout fields
-  loginAttempts: {
-    type: Number,
-    default: 0
-  },
-  lockUntil: {
-    type: Date
-  },
-  // 2FA fields
-  twoFactorSecret: {
-    type: String,
-    select: false // Don't include by default
-  },
-  twoFactorEnabled: {
-    type: Boolean,
-    default: false
-  },
-  // Security tracking
-  lastLogin: {
-    type: Date
-  },
-  lastIP: {
-    type: String
-  },
-  // Remember me tokens
-  rememberTokens: [{
-    token: {
+  
+  // Embedded loyalty cards (moved from separate collection)
+  cards: [{
+    name: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
+      maxlength: 100
+    },
+    code: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    codeType: {
+      type: String,
+      enum: ['barcode', 'qr'],
+      default: 'barcode'
+    },
+    category: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+      default: 'Інше',
+      enum: [
+        'Супермаркети',
+        'Аптеки', 
+        'Заправки',
+        'Ресторани',
+        'Одяг',
+        'Електроніка',
+        'Краса',
+        'Спорт',
+        'Банки',
+        'Транспорт',
+        'Інше'
+      ]
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: 500
+    },
+    color: {
+      type: String,
+      match: /^#[0-9A-Fa-f]{6}$/,
+      default: '#4F46E5'
     },
     createdAt: {
       type: Date,
       default: Date.now
     },
-    expiresAt: {
+    updatedAt: {
       type: Date,
-      default: function() {
-        return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-      }
-    },
-    userAgent: String,
-    ip: String
+      default: Date.now
+    }
   }],
-  passwordChangedAt: {
-    type: Date,
-    default: Date.now
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Virtual for checking if account is locked
-userSchema.virtual('isLocked').get(function() {
-  return !!(this.lockUntil && this.lockUntil > Date.now());
-});
-
-// Pre-save middleware to handle login attempts
-userSchema.pre('save', function(next) {
-  // If we're not modifying loginAttempts, continue
-  if (!this.isModified('loginAttempts')) return next();
   
-  // If we have a lockUntil and it's in the past, remove it
-  if (this.lockUntil && this.lockUntil < Date.now()) {
-    this.lockUntil = undefined;
-  }
+  // Embedded friends list (simplified from separate collection)
+  friends: [{
+    friendId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    friendName: String, // Denormalized for faster access
+    friendEmail: String, // Denormalized for faster access
+    status: {
+      type: String,
+      enum: ['pending_sent', 'pending_received', 'accepted', 'blocked'],
+      default: 'pending_sent'
+    },
+    addedAt: {
+      type: Date,
+      default: Date.now
+    },
+    acceptedAt: Date
+  }],
   
-  next();
-});
-
-// Instance method to increment login attempts
-userSchema.methods.incLoginAttempts = function() {
-  // If we have a lockUntil and it's in the past, start over
-  if (this.lockUntil && this.lockUntil < Date.now()) {
-    return this.updateOne({
-      $unset: { lockUntil: 1 },
-      $set: { loginAttempts: 1 }
-    });
-  }
+  // Security settings (consolidated)
+  security: {
+    loginAttempts: {
+      type: Number,
+      default: 0
+    },
+    lockUntil: Date,
+    twoFactorSecret: {
+      type: String,
+      select: false
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false
+    },
+    lastLogin: Date,
+    lastIP: String,
+    passwordChangedAt: {
+      type: Date,
+      default: Date.now
+    },
+    rememberTokens: [{
+      token: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      },
+      expiresAt: {
+        type: Date,
+        default: function() {
+          return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        }
+      },
+      userAgent: String,
+      ip: String
+    }]
+  },
   
-  const updates = { $inc: { loginAttempts: 1 } };
-  const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
-  const lockTime = parseInt(process.env.ACCOUNT_LOCK_TIME) || 7200000; // 2 hours
+  // User statistics (for better performance)
+  stats: {
+    totalCards: {
+      type: Number,
+      default: 0
+    },
+    totalShoppingLists: {
+      type: Number,
+      default: 0
+    },
+    totalFriends: {
+      type: Number,
+      default: 0
+    }
+  },
   
-  // If we hit max attempts and aren't locked yet, lock the account
-  if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked) {
-    updates.$set = { lockUntil: Date.now() + lockTime };
-    logger.warn(`Account locked for user: ${this.email}`);
-  }
-  
-  return this.updateOne(updates);
-};
-
-// Instance method to reset login attempts
-userSchema.methods.resetLoginAttempts = function() {
-  return this.updateOne({
-    $unset: { loginAttempts: 1, lockUntil: 1 }
-  });
-};
-
-// Card Schema
-const cardSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  name: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100
-  },
-  code: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  codeType: {
-    type: String,
-    enum: ['barcode', 'qr'],
-    default: 'barcode'
-  },
-  category: {
-    type: String,
-    trim: true,
-    maxlength: 50,
-    default: 'Інше',
-    enum: [
-      'Супермаркети',
-      'Аптеки', 
-      'Заправки',
-      'Ресторани',
-      'Одяг',
-      'Електроніка',
-      'Краса',
-      'Спорт',
-      'Банки',
-      'Транспорт',
-      'Інше'
-    ]
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: 500
-  },
-  color: {
-    type: String,
-    match: /^#[0-9A-Fa-f]{6}$/,
-    default: '#4F46E5'
-  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -370,18 +354,127 @@ const cardSchema = new mongoose.Schema({
   }
 });
 
-// Update timestamp before save
-cardSchema.pre('save', function(next) {
+// Virtual for checking if account is locked
+userSchema.virtual('isLocked').get(function() {
+  return !!(this.security.lockUntil && this.security.lockUntil > Date.now());
+});
+
+// Instance methods for login attempts
+userSchema.methods.incLoginAttempts = function() {
+  const maxAttempts = 5;
+  const lockTime = 2 * 60 * 60 * 1000; // 2 hours
+  
+  if (this.security.lockUntil && this.security.lockUntil < Date.now()) {
+    return this.updateOne({
+      $unset: { 'security.lockUntil': 1 },
+      $set: { 'security.loginAttempts': 1 }
+    });
+  }
+  
+  const updates = { $inc: { 'security.loginAttempts': 1 } };
+  
+  if (this.security.loginAttempts + 1 >= maxAttempts && !this.isLocked) {
+    updates.$set = { 'security.lockUntil': Date.now() + lockTime };
+  }
+  
+  return this.updateOne(updates);
+};
+
+userSchema.methods.resetLoginAttempts = function() {
+  return this.updateOne({
+    $unset: { 
+      'security.loginAttempts': 1,
+      'security.lockUntil': 1 
+    }
+  });
+};
+
+// Instance methods for cards management
+userSchema.methods.addCard = function(cardData) {
+  this.cards.push({
+    ...cardData,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  this.stats.totalCards = this.cards.length;
   this.updatedAt = new Date();
+  return this.save();
+};
+
+userSchema.methods.removeCard = function(cardId) {
+  this.cards.id(cardId).remove();
+  this.stats.totalCards = this.cards.length;
+  this.updatedAt = new Date();
+  return this.save();
+};
+
+userSchema.methods.updateCard = function(cardId, updateData) {
+  const card = this.cards.id(cardId);
+  if (card) {
+    Object.assign(card, updateData);
+    card.updatedAt = new Date();
+    this.updatedAt = new Date();
+    return this.save();
+  }
+  throw new Error('Card not found');
+};
+
+// Instance methods for friends management
+userSchema.methods.addFriend = function(friendId, friendName, friendEmail) {
+  this.friends.push({
+    friendId,
+    friendName,
+    friendEmail,
+    status: 'pending_sent',
+    addedAt: new Date()
+  });
+  return this.save();
+};
+
+userSchema.methods.acceptFriend = function(friendId) {
+  const friendship = this.friends.find(f => f.friendId.toString() === friendId.toString());
+  if (friendship) {
+    friendship.status = 'accepted';
+    friendship.acceptedAt = new Date();
+    this.stats.totalFriends = this.friends.filter(f => f.status === 'accepted').length;
+    this.updatedAt = new Date();
+    return this.save();
+  }
+  throw new Error('Friend request not found');
+};
+
+// Pre-save middleware for automatic updates
+userSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  
+  // Update statistics automatically
+  this.stats.totalCards = this.cards.length;
+  this.stats.totalFriends = this.friends.filter(f => f.status === 'accepted').length;
+  
+  // Handle card updates
+  this.cards.forEach(card => {
+    if (card.isModified() && !card.updatedAt) {
+      card.updatedAt = new Date();
+    }
+  });
+  
   next();
 });
 
-// Shopping List Schema
+// Database indexes for performance
+userSchema.index({ email: 1 });
+userSchema.index({ 'cards.category': 1 });
+userSchema.index({ 'cards.code': 1 });
+userSchema.index({ 'friends.friendId': 1 });
+userSchema.index({ 'friends.status': 1 });
+
+// Optimized Shopping List Schema (kept separate for large data)
 const shoppingListSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   name: {
     type: String,
@@ -460,6 +553,7 @@ const shoppingListSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    userName: String, // Denormalized for performance
     permission: {
       type: String,
       enum: ['view', 'edit'],
@@ -476,73 +570,32 @@ const shoppingListSchema = new mongoose.Schema({
   }
 });
 
-// Update timestamp before save
+// Shopping list middleware and methods
 shoppingListSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
-// Friendship Schema
-const friendshipSchema = new mongoose.Schema({
-  requester: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  recipient: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['pending', 'accepted', 'blocked'],
-    default: 'pending'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  acceptedAt: {
-    type: Date
-  }
-});
-
-// Ensure unique friendship relationships
-friendshipSchema.index({ requester: 1, recipient: 1 }, { unique: true });
-
-// Pre-save middleware to set acceptedAt when status changes to accepted
-friendshipSchema.pre('save', function(next) {
-  if (this.isModified('status') && this.status === 'accepted') {
-    this.acceptedAt = new Date();
-  }
-  next();
-});
-
-// Instance method to check if friendship exists between two users
-friendshipSchema.statics.findFriendship = function(userId1, userId2) {
-  return this.findOne({
-    $or: [
-      { requester: userId1, recipient: userId2 },
-      { requester: userId2, recipient: userId1 }
-    ]
+shoppingListSchema.methods.addItem = function(itemData) {
+  this.items.push({
+    ...itemData,
+    addedAt: new Date()
   });
+  return this.save();
 };
 
-// Instance method to get all friends for a user
-friendshipSchema.statics.getFriends = function(userId) {
-  return this.find({
-    $or: [
-      { requester: userId, status: 'accepted' },
-      { recipient: userId, status: 'accepted' }
-    ]
-  }).populate('requester recipient', 'name email');
+shoppingListSchema.methods.updateItem = function(itemId, updateData) {
+  const item = this.items.id(itemId);
+  if (item) {
+    Object.assign(item, updateData);
+    return this.save();
+  }
+  throw new Error('Item not found');
 };
 
+// Model definitions
 const User = mongoose.model('User', userSchema);
-const Card = mongoose.model('Card', cardSchema);
 const ShoppingList = mongoose.model('ShoppingList', shoppingListSchema);
-const Friendship = mongoose.model('Friendship', friendshipSchema);
 
 // Enhanced Auth middleware
 const authenticateToken = async (req, res, next) => {
@@ -592,9 +645,9 @@ const authenticateToken = async (req, res, next) => {
       
       // Find user with matching remember token
       user = await User.findOne({
-        'rememberTokens.token': rememberToken,
-        'rememberTokens.expiresAt': { $gt: new Date() }
-      }).select('-password -twoFactorSecret');
+        'security.rememberTokens.token': rememberToken,
+        'security.rememberTokens.expiresAt': { $gt: new Date() }
+      }).select('-password -security.twoFactorSecret');
 
       if (user) {
         // Check if account is locked
@@ -730,8 +783,6 @@ app.use('/api/auth', (req, res, next) => {
 });
 
 // Prometheus metrics disabled - install prom-client to enable
-
-app.use(securityHeaders);
 
 // Auth Routes
 
@@ -873,7 +924,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Successful login - reset attempts and update user
-    if (user.loginAttempts > 0) {
+    if (user.security.loginAttempts > 0) {
       await user.resetLoginAttempts();
     }
     
@@ -907,15 +958,20 @@ app.post('/api/auth/login', async (req, res) => {
     if (rememberMe) {
       rememberToken = require('crypto').randomBytes(64).toString('hex');
       
+      // Ensure security.rememberTokens array exists
+      if (!user.security.rememberTokens) {
+        user.security.rememberTokens = [];
+      }
+
       // Clean up old remember tokens (keep only last 5)
-      if (user.rememberTokens.length >= 5) {
-        user.rememberTokens = user.rememberTokens
+      if (user.security.rememberTokens.length >= 5) {
+        user.security.rememberTokens = user.security.rememberTokens
           .sort((a, b) => b.createdAt - a.createdAt)
           .slice(0, 4);
       }
 
       // Add new remember token
-      user.rememberTokens.push({
+      user.security.rememberTokens.push({
         token: rememberToken,
         userAgent: userAgent || 'Unknown',
         ip: clientIP,
@@ -971,12 +1027,12 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     // If logout from all devices, clear all remember tokens
     if (logoutAll) {
       await User.findByIdAndUpdate(req.user._id, {
-        $set: { rememberTokens: [] }
+        $set: { 'security.rememberTokens': [] }
       });
     } else if (rememberTokenFromCookie) {
       // Remove only current remember token
       await User.findByIdAndUpdate(req.user._id, {
-        $pull: { rememberTokens: { token: rememberTokenFromCookie } }
+        $pull: { 'security.rememberTokens': { token: rememberTokenFromCookie } }
       });
     }
 
@@ -1208,7 +1264,7 @@ app.post('/api/auth/login-2fa', async (req, res) => {
     }
     
     // Successful login
-    if (user.loginAttempts > 0) {
+    if (user.security.loginAttempts > 0) {
       await user.resetLoginAttempts();
     }
     
@@ -1350,9 +1406,9 @@ app.put('/api/user/update-password', authenticateToken, async (req, res) => {
     // Update password and passwordChangedAt
     await User.findByIdAndUpdate(user._id, {
       password: hashedNewPassword,
-      passwordChangedAt: new Date(),
+      'security.passwordChangedAt': new Date(),
       // Clear all remember tokens for security
-      rememberTokens: []
+      'security.rememberTokens': []
     });
     
     logger.info(`Password updated for user: ${user.email}`);
@@ -1405,17 +1461,15 @@ app.get('/api/auth/check', authenticateToken, async (req, res) => {
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('-password -twoFactorSecret -rememberTokens -loginAttempts -lockUntil');
+      .select('-password -security.twoFactorSecret -security.rememberTokens');
     
     if (!user) {
       return res.status(404).json({ error: 'Користувач не знайдений' });
     }
     
-    // Get user statistics
-    const [cardCount, shoppingListCount] = await Promise.all([
-      Card.countDocuments({ userId: user._id }),
-      ShoppingList.countDocuments({ userId: user._id })
-    ]);
+    // Get user statistics from embedded data and separate collection
+    const cardCount = user.cards.length;
+    const shoppingListCount = await ShoppingList.countDocuments({ userId: user._id });
     
     // Calculate account age in days
     const accountAge = Math.floor((Date.now() - user.createdAt) / (1000 * 60 * 60 * 24));
@@ -1481,18 +1535,17 @@ app.post('/api/cards', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Невірний формат кольору' });
     }
 
-    // Create card
-    const card = new Card({
-      userId: req.user._id,
+    // Add card to user's embedded cards array
+    const newCard = {
       name: sanitizeInput(name),
       code: sanitizeInput(code),
       codeType: codeType || 'barcode',
       category: category || 'Інше',
       description: description ? sanitizeInput(description) : undefined,
       color: color || '#4F46E5'
-    });
+    };
 
-    await card.save();
+    await req.user.addCard(newCard);
 
     res.status(201).json({
       success: true,
@@ -1515,14 +1568,14 @@ app.delete('/api/cards/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Невірний ID картки' });
     }
 
-    const card = await Card.findOneAndDelete({
-      _id: cardId,
-      userId: req.user._id
-    });
-
+    const user = await User.findById(req.user._id);
+    const card = user.cards.id(cardId);
+    
     if (!card) {
       return res.status(404).json({ error: 'Картка не знайдена' });
     }
+    
+    await user.removeCard(cardId);
 
     res.json({ message: 'Картка успішно видалена' });
 
@@ -1573,29 +1626,29 @@ app.put('/api/cards/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Невірний формат кольору' });
     }
 
-    // Update card
-    const card = await Card.findOneAndUpdate(
-      { _id: cardId, userId: req.user._id },
-      {
-        name: sanitizeInput(name),
-        code: sanitizeInput(code),
-        codeType: codeType || 'barcode',
-        category: category || 'Інше',
-        description: description ? sanitizeInput(description) : undefined,
-        color: color || '#4F46E5',
-        updatedAt: new Date()
-      },
-      { new: true, runValidators: true }
-    );
-
+    // Update card in user document
+    const user = await User.findById(req.user._id);
+    const card = user.cards.id(cardId);
+    
     if (!card) {
       return res.status(404).json({ error: 'Картка не знайдена' });
     }
+    
+    await user.updateCard(cardId, {
+      name: sanitizeInput(name),
+      code: sanitizeInput(code),
+      codeType: codeType || 'barcode',
+      category: category || 'Інше',
+      description: description ? sanitizeInput(description) : undefined,
+      color: color || '#4F46E5'
+    });
+    
+    const updatedCard = user.cards.id(cardId);
 
     res.json({
       success: true,
       message: 'Картка успішно оновлена',
-      card
+      card: updatedCard
     });
 
   } catch (error) {
@@ -1612,20 +1665,19 @@ app.get('/api/cards/categories', authenticateToken, async (req, res) => {
       'Електроніка', 'Краса', 'Спорт', 'Банки', 'Транспорт', 'Інше'
     ];
 
-    // Get user's card statistics by category
-    const stats = await Card.aggregate([
-      { $match: { userId: req.user._id } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
-
-    const categoryStats = categories.map(cat => {
-      const stat = stats.find(s => s._id === cat);
-      return {
-        name: cat,
-        count: stat ? stat.count : 0
-      };
+    // Get user's card statistics by category from embedded data
+    const user = await User.findById(req.user._id);
+    const cardsByCategory = {};
+    
+    // Count cards by category
+    user.cards.forEach(card => {
+      cardsByCategory[card.category] = (cardsByCategory[card.category] || 0) + 1;
     });
+
+    const categoryStats = categories.map(cat => ({
+      name: cat,
+      count: cardsByCategory[cat] || 0
+    }));
 
     res.json({
       success: true,
@@ -1661,7 +1713,31 @@ app.get('/api/cards', authenticateToken, async (req, res) => {
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    const cards = await Card.find(filter).sort(sort);
+    const user = await User.findById(req.user._id);
+    let cards = user.cards;
+    
+    // Apply filters
+    if (category) {
+      cards = cards.filter(card => card.category === category);
+    }
+    if (search) {
+      const searchLower = search.toLowerCase();
+      cards = cards.filter(card => 
+        card.name.toLowerCase().includes(searchLower) ||
+        card.code.toLowerCase().includes(searchLower) ||
+        (card.description && card.description.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply sorting
+    cards.sort((a, b) => {
+      const aVal = a[sortBy];
+      const bVal = b[sortBy];
+      if (sortOrder === 'desc') {
+        return aVal < bVal ? 1 : -1;
+      }
+      return aVal > bVal ? 1 : -1;
+    });
 
     res.json({ 
       success: true, 
@@ -1679,7 +1755,8 @@ app.get('/api/cards', authenticateToken, async (req, res) => {
 app.get('/api/cards/export', authenticateToken, async (req, res) => {
   try {
     const { format = 'json' } = req.query;
-    const cards = await Card.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    const user = await User.findById(req.user._id);
+    const cards = user.cards.sort((a, b) => b.createdAt - a.createdAt);
 
     // Remove sensitive data and prepare export data
     const exportData = cards.map(card => ({
@@ -1766,10 +1843,8 @@ app.post('/api/cards/import', authenticateToken, async (req, res) => {
         }
 
         // Check for existing card with same code
-        const existingCard = await Card.findOne({
-          userId: req.user._id,
-          code: cardData.code
-        });
+        const user = await User.findById(req.user._id);
+        const existingCard = user.cards.find(card => card.code === cardData.code);
 
         if (existingCard) {
           if (skipDuplicates && !overwriteExisting) {
@@ -1779,13 +1854,12 @@ app.post('/api/cards/import', authenticateToken, async (req, res) => {
           
           if (overwriteExisting) {
             // Update existing card
-            await Card.findByIdAndUpdate(existingCard._id, {
+            await user.updateCard(existingCard._id, {
               name: sanitizeInput(cardData.name),
               codeType: cardData.codeType || 'barcode',
               category: cardData.category || 'Інше',
               description: cardData.description ? sanitizeInput(cardData.description) : undefined,
-              color: cardData.color || '#4F46E5',
-              updatedAt: new Date()
+              color: cardData.color || '#4F46E5'
             });
             results.imported++;
             continue;
@@ -1793,8 +1867,7 @@ app.post('/api/cards/import', authenticateToken, async (req, res) => {
         }
 
         // Create new card
-        const newCard = new Card({
-          userId: req.user._id,
+        await user.addCard({
           name: sanitizeInput(cardData.name),
           code: sanitizeInput(cardData.code),
           codeType: cardData.codeType || 'barcode',
@@ -1802,8 +1875,6 @@ app.post('/api/cards/import', authenticateToken, async (req, res) => {
           description: cardData.description ? sanitizeInput(cardData.description) : undefined,
           color: cardData.color || '#4F46E5'
         });
-
-        await newCard.save();
         results.imported++;
 
       } catch (cardError) {
@@ -1851,16 +1922,12 @@ app.get('/api/friends/search/:userId', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Користувач не знайдений' });
     }
     
-    // Check if friendship already exists
-    const existingFriendship = await Friendship.findFriendship(req.user._id, searchUserId);
+    // Check if friendship already exists in embedded friends array
+    const existingFriend = req.user.friends.find(f => f.friendId.toString() === searchUserId.toString());
     
     let friendshipStatus = 'none';
-    if (existingFriendship) {
-      if (existingFriendship.status === 'pending') {
-        friendshipStatus = existingFriendship.requester.toString() === req.user._id.toString() ? 'sent' : 'received';
-      } else {
-        friendshipStatus = existingFriendship.status;
-      }
+    if (existingFriend) {
+      friendshipStatus = existingFriend.status;
     }
     
     res.json({
@@ -1899,26 +1966,21 @@ app.post('/api/friends/request', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Користувач не знайдений' });
     }
     
-    // Check if friendship already exists
-    const existingFriendship = await Friendship.findFriendship(req.user._id, recipientId);
-    if (existingFriendship) {
-      if (existingFriendship.status === 'accepted') {
+    // Check if friendship already exists in user's friends array
+    const existingFriend = req.user.friends.find(f => f.friendId.toString() === recipientId);
+    if (existingFriend) {
+      if (existingFriend.status === 'accepted') {
         return res.status(400).json({ error: 'Ви вже друзі' });
-      } else if (existingFriendship.status === 'pending') {
+      } else if (existingFriend.status === 'pending_sent') {
         return res.status(400).json({ error: 'Запит вже надіслано' });
-      } else if (existingFriendship.status === 'blocked') {
+      } else if (existingFriend.status === 'blocked') {
         return res.status(400).json({ error: 'Неможливо надіслати запит' });
       }
     }
     
-    // Create friendship request
-    const friendship = new Friendship({
-      requester: req.user._id,
-      recipient: recipientId,
-      status: 'pending'
-    });
-    
-    await friendship.save();
+    // Add friend request to both users
+    await req.user.addFriend(recipientId, recipient.name, recipient.email);
+    await recipient.addFriend(req.user._id, req.user.name, req.user.email, 'pending_received');
     
     logger.info(`Friend request sent from ${req.user.email} to ${recipient.email}`);
     
@@ -1954,41 +2016,44 @@ app.put('/api/friends/request/:requestId', authenticateToken, async (req, res) =
       return res.status(400).json({ error: 'Невірна дія. Використовуйте accept або reject' });
     }
     
-    const friendship = await Friendship.findById(requestId).populate('requester', 'name email');
+    // Find pending request in user's friends list
+    const friendRequest = req.user.friends.find(f => f._id.toString() === requestId && f.status === 'pending_received');
     
-    if (!friendship) {
+    if (!friendRequest) {
       return res.status(404).json({ error: 'Запит на дружбу не знайдений' });
     }
     
-    if (friendship.recipient.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Ви не можете відповісти на цей запит' });
-    }
-    
-    if (friendship.status !== 'pending') {
-      return res.status(400).json({ error: 'Запит вже оброблений' });
-    }
-    
     if (action === 'accept') {
-      friendship.status = 'accepted';
-      friendship.acceptedAt = new Date();
-      await friendship.save();
+      await req.user.acceptFriend(friendRequest.friendId);
       
-      logger.info(`Friend request accepted: ${friendship.requester.email} -> ${req.user.email}`);
+      // Also update the friend's status to accepted
+      const requester = await User.findById(friendRequest.friendId);
+      if (requester) {
+        await requester.acceptFriend(req.user._id);
+      }
+      
+      logger.info(`Friend request accepted: ${friendRequest.friendEmail} -> ${req.user.email}`);
       
       res.json({
         success: true,
         message: 'Запит на дружбу прийнято',
-        friendship: {
-          id: friendship._id,
-          requester: friendship.requester,
-          status: 'accepted',
-          acceptedAt: friendship.acceptedAt
+        friend: {
+          id: friendRequest.friendId,
+          name: friendRequest.friendName,
+          email: friendRequest.friendEmail,
+          status: 'accepted'
         }
       });
     } else {
-      await Friendship.findByIdAndDelete(requestId);
+      await req.user.removeFriend(friendRequest.friendId);
       
-      logger.info(`Friend request rejected: ${friendship.requester.email} -> ${req.user.email}`);
+      // Also remove from requester's list
+      const requester = await User.findById(friendRequest.friendId);
+      if (requester) {
+        await requester.removeFriend(req.user._id);
+      }
+      
+      logger.info(`Friend request rejected: ${friendRequest.friendEmail} -> ${req.user.email}`);
       
       res.json({
         success: true,
@@ -2005,21 +2070,16 @@ app.put('/api/friends/request/:requestId', authenticateToken, async (req, res) =
 // Get friends list
 app.get('/api/friends', authenticateToken, async (req, res) => {
   try {
-    const friendships = await Friendship.getFriends(req.user._id);
-    
-    const friends = friendships.map(friendship => {
-      const friend = friendship.requester._id.toString() === req.user._id.toString() 
-        ? friendship.recipient 
-        : friendship.requester;
-      
-      return {
-        id: friend._id,
-        name: friend.name,
-        email: friend.email,
-        friendshipId: friendship._id,
-        friendsSince: friendship.acceptedAt
-      };
-    });
+    // Get friends from embedded friends array
+    const friends = req.user.friends
+      .filter(f => f.status === 'accepted')
+      .map(friend => ({
+        id: friend.friendId,
+        name: friend.friendName,
+        email: friend.friendEmail,
+        friendshipId: friend._id,
+        friendsSince: friend.acceptedAt
+      }));
     
     res.json({
       success: true,
@@ -2036,29 +2096,29 @@ app.get('/api/friends', authenticateToken, async (req, res) => {
 // Get pending friend requests
 app.get('/api/friends/requests', authenticateToken, async (req, res) => {
   try {
-    const [sentRequests, receivedRequests] = await Promise.all([
-      Friendship.find({
-        requester: req.user._id,
-        status: 'pending'
-      }).populate('recipient', 'name email'),
-      
-      Friendship.find({
-        recipient: req.user._id,
-        status: 'pending'
-      }).populate('requester', 'name email')
-    ]);
+    // Get pending requests from embedded friends array
+    const sentRequests = req.user.friends.filter(f => f.status === 'pending_sent');
+    const receivedRequests = req.user.friends.filter(f => f.status === 'pending_received');
     
     res.json({
       success: true,
-      sent: sentRequests.map(req => ({
-        id: req._id,
-        user: req.recipient,
-        sentAt: req.createdAt
+      sent: sentRequests.map(friend => ({
+        id: friend._id,
+        user: {
+          _id: friend.friendId,
+          name: friend.friendName,
+          email: friend.friendEmail
+        },
+        sentAt: friend.addedAt
       })),
-      received: receivedRequests.map(req => ({
-        id: req._id,
-        user: req.requester,
-        receivedAt: req.createdAt
+      received: receivedRequests.map(friend => ({
+        id: friend._id,
+        user: {
+          _id: friend.friendId,
+          name: friend.friendName,
+          email: friend.friendEmail
+        },
+        receivedAt: friend.addedAt
       }))
     });
     
@@ -2077,21 +2137,22 @@ app.delete('/api/friends/:friendshipId', authenticateToken, async (req, res) => 
       return res.status(400).json({ error: 'Невірний ID дружби' });
     }
     
-    const friendship = await Friendship.findById(friendshipId);
+    // Find friend in user's friends array
+    const friendToRemove = req.user.friends.find(f => f._id.toString() === friendshipId);
     
-    if (!friendship) {
-      return res.status(404).json({ error: 'Дружба не знайдена' });
+    if (!friendToRemove) {
+      return res.status(404).json({ error: 'Друг не знайдений' });
     }
     
-    // Check if user is part of this friendship
-    if (friendship.requester.toString() !== req.user._id.toString() && 
-        friendship.recipient.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Ви не можете видалити цю дружбу' });
+    // Remove friend from both users
+    await req.user.removeFriend(friendToRemove.friendId);
+    
+    const friendUser = await User.findById(friendToRemove.friendId);
+    if (friendUser) {
+      await friendUser.removeFriend(req.user._id);
     }
     
-    await Friendship.findByIdAndDelete(friendshipId);
-    
-    logger.info(`Friendship removed: ${friendship.requester} <-> ${friendship.recipient}`);
+    logger.info(`Friendship removed: ${req.user._id} <-> ${friendToRemove.friendId}`);
     
     res.json({
       success: true,
@@ -2128,9 +2189,9 @@ app.post('/api/shopping-lists/:id/share', authenticateToken, async (req, res) =>
       return res.status(404).json({ error: 'Список не знайдено' });
     }
     
-    // Check if friendship exists
-    const friendship = await Friendship.findFriendship(req.user._id, friendId);
-    if (!friendship || friendship.status !== 'accepted') {
+    // Check if friendship exists in embedded friends array
+    const friendData = req.user.friends.find(f => f.friendId.toString() === friendId && f.status === 'accepted');
+    if (!friendData) {
       return res.status(400).json({ error: 'Користувач не є вашим другом' });
     }
     

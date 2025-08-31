@@ -1,7 +1,7 @@
 {
-  "name": "Карти Лояльності",
-  "short_name": "LoyaltyCards",
-  "description": "Додаток для збереження та сканування карт лояльності",
+  "name": "disCard",
+  "short_name": "disCard",
+  "description": "disCard - додаток для збереження та сканування карт лояльності",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#667eea",

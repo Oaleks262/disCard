@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+    <!-- Головна сторінка -->
+    <url>
+        <loc>https://discard.com.ua/</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+    <!-- Сторінка карт лояльності -->
+    <url>
+        <loc>https://discard.com.ua/#cards</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Сторінка додавання картки -->
+    <url>
+        <loc>https://discard.com.ua/#add-card</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Сторінка списків покупок -->
+    <url>
+        <loc>https://discard.com.ua/#shopping</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Сторінка додавання списку покупок -->
+    <url>
+        <loc>https://discard.com.ua/#add-shopping-list</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Сторінка друзів -->
+    <url>
+        <loc>https://discard.com.ua/#friends</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Сторінка профілю -->
+    <url>
+        <loc>https://discard.com.ua/#profile</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Сторінка входу -->
+    <url>
+        <loc>https://discard.com.ua/#login</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
+    <!-- Сторінка реєстрації -->
+    <url>
+        <loc>https://discard.com.ua/#register</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
+    <!-- PWA маніфест -->
+    <url>
+        <loc>https://discard.com.ua/manifest.json</loc>
+        <lastmod>2024-12-31</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.3</priority>
+    </url>
+
+</urlset>

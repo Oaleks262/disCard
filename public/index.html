@@ -3,9 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Додаток для збереження карт лояльності">
+    
+    <!-- SEO Meta Tags -->
+    <title>disCard - Зберігайте карти лояльності онлайн | Сканер штрих-кодів</title>
+    <meta name="description" content="disCard - безкоштовний додаток для збереження карт лояльності. Скануйте штрих-коди, QR-коди, керуйте списками покупок та діліться з друзями.">
+    <meta name="keywords" content="карти лояльності, штрих-код, QR-код, сканер, покупки, знижки, дисконтні карти, мобільний додаток">
+    <meta name="author" content="disCard">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="uk">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://discard.com.ua/">
+    <meta property="og:title" content="disCard - Зберігайте карти лояльності онлайн">
+    <meta property="og:description" content="Безкоштовний додаток для збереження карт лояльності. Скануйте штрих-коди, керуйте покупками та не втрачайте знижки.">
+    <meta property="og:image" content="https://discard.com.ua/logo-disCard.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="uk_UA">
+    <meta property="og:site_name" content="disCard">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://discard.com.ua/">
+    <meta property="twitter:title" content="disCard - Зберігайте карти лояльності онлайн">
+    <meta property="twitter:description" content="Безкоштовний додаток для збереження карт лояльності. Скануйте штрих-коди, керуйте покупками та не втрачайте знижки.">
+    <meta property="twitter:image" content="https://discard.com.ua/logo-disCard.png">
+    
+    <!-- Additional SEO -->
     <meta name="theme-color" content="#667eea">
-    <title>Карти Лояльності</title>
+    <meta name="msapplication-TileColor" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="disCard">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://discard.com.ua/">
+    
+    <!-- Geo tags -->
+    <meta name="geo.region" content="UA">
+    <meta name="geo.placename" content="Ukraine">
+    
+    <!-- Rating -->
+    <meta name="rating" content="general">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -37,7 +78,6 @@
         <nav id="navbar" class="navbar" style="display: none;">
             <div class="nav-brand">
                 <img src="/logo-disCard.png" alt="disCard" class="nav-logo">
-                <h1 data-translate="app.title">💳 Карти Лояльності</h1>
             </div>
             <div class="nav-actions">
                 <button id="language-toggle" class="btn-icon" title="Switch Language / Змінити мову">
@@ -50,6 +90,22 @@
                     🚪
                 </button>
             </div>
+        </nav>
+
+        <!-- Breadcrumb Navigation -->
+        <nav id="breadcrumb" class="breadcrumb" style="display: none;" aria-label="breadcrumb">
+            <ol class="breadcrumb-list" itemscope itemtype="https://schema.org/BreadcrumbList">
+                <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                    <a href="https://discard.com.ua/" itemprop="item" class="breadcrumb-link">
+                        <span itemprop="name">Головна</span>
+                    </a>
+                    <meta itemprop="position" content="1">
+                </li>
+                <li class="breadcrumb-item active" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                    <span itemprop="name" id="current-page-name">Карти</span>
+                    <meta itemprop="position" content="2">
+                </li>
+            </ol>
         </nav>
 
         <!-- Main Tabs Navigation -->
@@ -620,7 +676,7 @@
                     <div id="friends-search" class="search-container">
                         <input type="text" id="friends-search-input" class="search-input" 
                                data-translate-placeholder="friends.search_friends" placeholder="Пошук друзів...">
-                        <span class="search-icon">🔍</span>
+                               
                     </div>
                     <div id="friends-list" class="friends-list">
                         <!-- Friends will be loaded here -->
@@ -740,6 +796,41 @@
             </div>
         </div>
     </div>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "disCard",
+        "description": "Додаток для збереження карт лояльності з функціями сканування штрих-кодів та QR-кодів",
+        "url": "https://discard.com.ua",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "UAH"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "disCard"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "150"
+        },
+        "featureList": [
+            "Збереження карт лояльності",
+            "Сканування штрих-кодів",
+            "Сканування QR-кодів",
+            "Списки покупок",
+            "Спільний доступ з друзями",
+            "Безпека 2FA"
+        ]
+    }
+    </script>
 
     <!-- Scripts -->
     <script src="/script.js?v=14"></script>

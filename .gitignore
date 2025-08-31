@@ -1,12 +1,12 @@
-# Environment files
-.gitignore
+# ===========================================================
+# disCard App - Production Ready .gitignore
+# ===========================================================
+
+# Environment files (contains sensitive data)
 .env
 .env.local
 .env.production
-.env.example
-Dockerfile
-docker-compose.yml
-.dockerignore
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -92,7 +92,21 @@ dist
 .vscode-test
 
 # Logs
+logs/
 *.log
+
+# Production builds
+dist/
+build/
+
+# Deployment files  
+.vercel/
+.railway/
+.render/
+
+# PM2 ecosystem files
+ecosystem.config.js
+.pm2/
 
 # OS generated files
 .DS_Store
@@ -106,10 +120,50 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+
+# Test files (removed from production)
+__tests__/
+*.test.js
+jest.config.js
+jest.setup.js
+test-*.js
+*test*.js
+security-test.js
+
+# Migration files (no longer needed)
+migrate-*.js
+API_MIGRATION_GUIDE.md
+info.txt
 
 # Temporary files
 tmp/
 temp/
+
+# SSL certificates (if any)
+*.key
+*.crt
+*.pem
+
+# Database dumps
+*.dump
+*.sql
+
+# Monitoring and analytics
+newrelic.js
+datadog.yaml
+
+# Backup files  
+*.backup
+*.bak
+*.orig
+
+# Editor backups
+*~
+*.swp
+*.swo
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar

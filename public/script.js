@@ -1252,6 +1252,7 @@ async function handleAddCard(e) {
         
         if (response.ok) {
             showNotification(getTranslation('messages.card_added'), 'success');
+            await loadCards(); // Оновити картки
             await showPage('cards');
         } else if (response.status === 401) {
             showPage('login');
@@ -2218,8 +2219,11 @@ async function loginWith2FA(email, password, twoFactorToken = null) {
         currentUser = data.user;
         showNotification(getTranslation('messages.login_success'), 'success');
         showPage('cards');
-        loadCards();
-        loadFriends(); // Завантажити друзів для функції поділитися
+        await Promise.all([
+            loadCards(),
+            loadFriends(),
+            loadShoppingLists()
+        ]);
         
     } catch (error) {
         console.error('Login error:', error);
@@ -2623,6 +2627,7 @@ async function addShoppingItem(event) {
         document.getElementById('item-quantity').value = '1';
         updateListStats();
         renderShoppingItems();
+        loadShoppingLists(); // Оновити список покупок
         
         showNotification('Товар додано', 'success');
     } catch (error) {
@@ -2654,6 +2659,7 @@ async function toggleItemCompleted(itemId) {
         
         updateListStats();
         renderShoppingItems();
+        loadShoppingLists(); // Оновити список покупок
     } catch (error) {
         console.error('Toggle item error:', error);
         showNotification('Помилка оновлення товару', 'error');
@@ -2676,6 +2682,7 @@ async function deleteShoppingItem(itemId) {
         
         updateListStats();
         renderShoppingItems();
+        loadShoppingLists(); // Оновити список покупок
         showNotification('Товар видалено', 'success');
     } catch (error) {
         console.error('Delete item error:', error);
@@ -2862,6 +2869,11 @@ async function login(event) {
         currentUser = data.user;
         showPage('cards');
         showNotification(data.message, 'success');
+        await Promise.all([
+            loadCards(),
+            loadFriends(),
+            loadShoppingLists()
+        ]);
     } catch (error) {
         console.error('Login error:', error);
         showNotification(error.message, 'error');

@@ -149,24 +149,13 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Serve static files with cache control
 app.use(express.static(path.join(__dirname, 'public'), {
-  etag: true,
-  lastModified: true,
+  etag: false,
+  lastModified: false,
   setHeaders: (res, path) => {
-    if (process.env.NODE_ENV !== 'production') {
-      // В режимі розробки відключаємо кешування для JS/CSS файлів
-      if (path.endsWith('.js') || path.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-      }
-    } else {
-      // У продакшені встановлюємо нормальний кеш для статичних файлів
-      if (path.endsWith('.js') || path.endsWith('.css')) {
-        res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 день
-      } else if (path.match(/\.(jpg|jpeg|png|gif|ico|svg)$/)) {
-        res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 днів
-      }
-    }
+    // Повністю відключаємо кешування для всіх файлів
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
   }
 }));
 

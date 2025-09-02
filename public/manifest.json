@@ -1,80 +1,40 @@
 {
-  "name": "disCard",
+  "name": "disCard - Карти лояльності",
   "short_name": "disCard",
-  "description": "disCard - додаток для збереження та сканування карт лояльності",
+  "description": "Сучасний PWA додаток для управління картами лояльності з підтримкою сканування та офлайн режиму",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#667eea",
-  "theme_color": "#667eea",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0066FF",
   "orientation": "portrait-primary",
-  "categories": ["shopping", "utilities"],
+  "scope": "/",
   "lang": "uk",
+  "dir": "ltr",
+  "categories": ["productivity", "shopping", "utilities"],
   "icons": [
     {
-      "src": "/logo-disCard.png",
-      "sizes": "72x72 96x96 128x128 144x144 152x152 192x192 384x384 512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     },
     {
-      "src": "/logo-disCard.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/icons/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
     },
     {
-      "src": "/logo-disCard.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Додати картку",
-      "short_name": "Додати",
-      "description": "Швидко додати нову карту лояльності",
-      "url": "/?action=add-card",
-      "icons": [
-        {
-          "src": "/logo-disCard.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Сканувати код",
-      "short_name": "Сканер",
-      "description": "Відкрити сканер штрих-кодів",
-      "url": "/?action=scan",
-      "icons": [
-        {
-          "src": "/logo-disCard.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icons/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Головна сторінка з картами лояльності"
-    },
-    {
-      "src": "/icons/screenshot-narrow.png", 
-      "sizes": "640x1136",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Мобільний вигляд додатку"
+      "src": "/icons/favicon-16x16.png", 
+      "sizes": "16x16",
+      "type": "image/png"
     }
   ],
   "related_applications": [],
   "prefer_related_applications": false,
-  "protocol_handlers": [],
   "edge_side_panel": {
     "preferred_width": 400
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
   }
 }

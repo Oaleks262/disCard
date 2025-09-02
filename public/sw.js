@@ -1,334 +1,403 @@
-// Service Worker for Loyalty Cards App
-const CACHE_NAME = 'loyalty-cards-v1.0.1';
-const STATIC_CACHE = 'static-v1.0.1';
-const DYNAMIC_CACHE = 'dynamic-v1.0.1';
+// Service Worker for disCard PWA
 
-// Files to cache
-const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/script.js',
-    '/manifest.json',
-    '/libs/quagga.min.js',
-    '/libs/jsqr.min.js'
+const CACHE_NAME = 'discard-v1.0.0';
+const RUNTIME = 'runtime';
+const API_CACHE = 'api-cache';
+
+// Files to cache immediately
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/app.html',
+  '/css/landing.css',
+  '/css/app.css',
+  '/js/landing.js',
+  '/js/app.js',
+  '/js/i18n.js',
+  '/manifest.json',
+  // External libraries
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'
 ];
 
-// API endpoints to cache
-const CACHABLE_API_ENDPOINTS = [
-    '/api/cards'
-];
-
-// Install event - cache static assets
-self.addEventListener('install', (event) => {
-    console.log('Service Worker: Installing...');
-    
-    event.waitUntil(
-        caches.open(STATIC_CACHE)
-            .then((cache) => {
-                console.log('Service Worker: Caching static assets');
-                return cache.addAll(STATIC_ASSETS);
-            })
-            .then(() => {
-                console.log('Service Worker: Static assets cached');
-                return self.skipWaiting();
-            })
-            .catch((error) => {
-                console.error('Service Worker: Error caching static assets:', error);
-            })
-    );
+// Install Service Worker
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Precaching app shell');
+        return cache.addAll(PRECACHE_URLS);
+      })
+      .then(() => {
+        console.log('Service Worker installed successfully');
+        return self.skipWaiting();
+      })
+      .catch(error => {
+        console.error('Service Worker install failed:', error);
+      })
+  );
 });
 
-// Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
-    console.log('Service Worker: Activating...');
-    
-    event.waitUntil(
-        caches.keys()
-            .then((cacheNames) => {
-                return Promise.all(
-                    cacheNames.map((cacheName) => {
-                        if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-                            console.log('Service Worker: Deleting old cache:', cacheName);
-                            return caches.delete(cacheName);
-                        }
-                    })
-                );
-            })
-            .then(() => {
-                console.log('Service Worker: Activated');
-                return self.clients.claim();
-            })
-    );
+// Activate Service Worker
+self.addEventListener('activate', event => {
+  const currentCaches = [CACHE_NAME, RUNTIME, API_CACHE];
+  
+  event.waitUntil(
+    caches.keys()
+      .then(cacheNames => {
+        return cacheNames.filter(cacheName => !currentCaches.includes(cacheName));
+      })
+      .then(cachesToDelete => {
+        return Promise.all(cachesToDelete.map(cacheToDelete => {
+          console.log('Deleting old cache:', cacheToDelete);
+          return caches.delete(cacheToDelete);
+        }));
+      })
+      .then(() => {
+        console.log('Service Worker activated successfully');
+        return self.clients.claim();
+      })
+  );
 });
 
-// Fetch event - serve cached content when offline
-self.addEventListener('fetch', (event) => {
-    const { request } = event;
-    const url = new URL(request.url);
-    
-    // Handle different types of requests
-    if (request.method === 'GET') {
-        // Static assets
-        if (STATIC_ASSETS.some(asset => request.url.includes(asset))) {
-            event.respondWith(cacheFirst(request));
-        }
-        // API requests
-        else if (url.pathname.startsWith('/api/')) {
-            event.respondWith(networkFirst(request));
-        }
-        // Other requests (images, fonts, etc.)
-        else {
-            event.respondWith(staleWhileRevalidate(request));
-        }
-    }
-    // POST, PUT, DELETE requests
-    else if (['POST', 'PUT', 'DELETE'].includes(request.method)) {
-        event.respondWith(networkOnly(request));
-    }
+// Fetch event handler with different caching strategies
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Handle different types of requests with appropriate strategies
+  if (url.pathname.startsWith('/api/')) {
+    // API requests - Network First with cache fallback
+    event.respondWith(networkFirstWithFallback(request));
+  } else if (isStaticAsset(url.pathname)) {
+    // Static assets - Cache First
+    event.respondWith(cacheFirstWithNetworkFallback(request));
+  } else if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    // HTML pages - Stale While Revalidate
+    event.respondWith(staleWhileRevalidate(request));
+  } else {
+    // Default strategy
+    event.respondWith(networkFirstWithFallback(request));
+  }
 });
 
-// Caching strategies
+// Caching Strategies
 
-// Cache First - for static assets
-async function cacheFirst(request) {
-    try {
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-        
-        const networkResponse = await fetch(request);
-        
-        // Cache successful responses
-        if (networkResponse.ok) {
-            const cache = await caches.open(STATIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-        
-        return networkResponse;
-    } catch (error) {
-        console.error('Cache First error:', error);
-        
-        // Return offline page for navigation requests
-        if (request.destination === 'document') {
-            return caches.match('/index.html');
-        }
-        
-        // Return empty response for other requests
-        return new Response('', { status: 408, statusText: 'Request timeout' });
+// Network First - Try network first, fallback to cache
+async function networkFirstWithFallback(request) {
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.status === 200) {
+      const cache = await caches.open(isApiRequest(request) ? API_CACHE : RUNTIME);
+      cache.put(request, networkResponse.clone());
     }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Network failed, trying cache:', request.url);
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Return offline page for HTML requests
+    if (request.destination === 'document') {
+      const cache = await caches.open(CACHE_NAME);
+      return cache.match('/app.html') || new Response('Offline', { status: 503 });
+    }
+    
+    throw error;
+  }
 }
 
-// Network First - for API requests
-async function networkFirst(request) {
-    try {
-        const networkResponse = await fetch(request);
-        
-        // Cache successful GET requests
-        if (networkResponse.ok && request.method === 'GET') {
-            const cache = await caches.open(DYNAMIC_CACHE);
-            cache.put(request, networkResponse.clone());
-        }
-        
-        return networkResponse;
-    } catch (error) {
-        console.error('Network First error:', error);
-        
-        // Try to serve from cache
-        const cachedResponse = await caches.match(request);
-        if (cachedResponse) {
-            return cachedResponse;
-        }
-        
-        // Return offline response for API requests
-        if (request.url.includes('/api/')) {
-            return new Response(
-                JSON.stringify({ 
-                    error: 'Немає з\'єднання з інтернетом',
-                    offline: true
-                }), 
-                {
-                    status: 503,
-                    statusText: 'Service Unavailable',
-                    headers: { 'Content-Type': 'application/json' }
-                }
-            );
-        }
-        
-        return new Response('', { status: 503, statusText: 'Service Unavailable' });
-    }
+// Cache First - Try cache first, fallback to network
+async function cacheFirstWithNetworkFallback(request) {
+  const cachedResponse = await caches.match(request);
+  
+  if (cachedResponse) {
+    // Update cache in background
+    updateCacheInBackground(request);
+    return cachedResponse;
+  }
+  
+  try {
+    const networkResponse = await fetch(request);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, networkResponse.clone());
+    return networkResponse;
+  } catch (error) {
+    console.error('Cache and network failed:', error);
+    throw error;
+  }
 }
 
-// Stale While Revalidate - for other resources
+// Stale While Revalidate - Return cache immediately, update in background
 async function staleWhileRevalidate(request) {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    const cachedResponse = await cache.match(request);
-    
-    const networkResponsePromise = fetch(request)
-        .then((networkResponse) => {
-            if (networkResponse.ok) {
-                cache.put(request, networkResponse.clone());
-            }
-            return networkResponse;
-        })
-        .catch(() => null);
-    
-    return cachedResponse || await networkResponsePromise || new Response('', { 
-        status: 404, 
-        statusText: 'Not Found' 
-    });
+  const cachedResponse = await caches.match(request);
+  
+  const networkResponsePromise = fetch(request).then(async networkResponse => {
+    if (networkResponse.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  }).catch(() => null);
+  
+  return cachedResponse || networkResponsePromise;
 }
 
-// Network Only - for write operations
-async function networkOnly(request) {
-    try {
-        return await fetch(request);
-    } catch (error) {
-        console.error('Network Only error:', error);
-        
-        return new Response(
-            JSON.stringify({ 
-                error: 'Немає з\'єднання з інтернетом. Спробуйте пізніше.',
-                offline: true
-            }), 
-            {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: { 'Content-Type': 'application/json' }
-            }
-        );
-    }
+// Background cache update
+async function updateCacheInBackground(request) {
+  try {
+    const networkResponse = await fetch(request);
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, networkResponse);
+  } catch (error) {
+    // Silent fail for background updates
+  }
+}
+
+// Helper functions
+function isStaticAsset(pathname) {
+  const staticAssetExtensions = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff', '.woff2'];
+  return staticAssetExtensions.some(ext => pathname.endsWith(ext));
+}
+
+function isApiRequest(request) {
+  return request.url.includes('/api/');
 }
 
 // Background Sync for offline actions
-self.addEventListener('sync', (event) => {
-    console.log('Service Worker: Background sync triggered:', event.tag);
-    
-    if (event.tag === 'background-sync-cards') {
-        event.waitUntil(syncOfflineActions());
-    }
+self.addEventListener('sync', event => {
+  console.log('Background sync triggered:', event.tag);
+  
+  if (event.tag === 'card-sync') {
+    event.waitUntil(syncCards());
+  } else if (event.tag === 'profile-sync') {
+    event.waitUntil(syncProfile());
+  }
 });
 
-async function syncOfflineActions() {
-    try {
-        // Get offline actions from IndexedDB or localStorage
-        const offlineActions = JSON.parse(localStorage.getItem('offlineActions') || '[]');
+async function syncCards() {
+  try {
+    // Get offline cards from IndexedDB
+    const offlineCards = await getOfflineCards();
+    
+    for (const cardData of offlineCards) {
+      try {
+        const response = await fetch('/api/cards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${cardData.token}`
+          },
+          body: JSON.stringify(cardData.card)
+        });
         
-        for (const action of offlineActions) {
-            try {
-                const response = await fetch(action.url, {
-                    method: action.method,
-                    headers: action.headers,
-                    body: action.body
-                });
-                
-                if (response.ok) {
-                    console.log('Offline action synced:', action);
-                } else {
-                    console.error('Failed to sync offline action:', action);
-                }
-            } catch (error) {
-                console.error('Error syncing offline action:', error);
-            }
+        if (response.ok) {
+          // Remove from offline storage
+          await removeOfflineCard(cardData.id);
+          
+          // Notify client about successful sync
+          await notifyClient('card-synced', { card: cardData.card });
         }
-        
-        // Clear synced actions
-        localStorage.removeItem('offlineActions');
-        
-    } catch (error) {
-        console.error('Background sync error:', error);
+      } catch (error) {
+        console.error('Failed to sync card:', error);
+      }
     }
+  } catch (error) {
+    console.error('Background sync failed:', error);
+  }
 }
 
-// Push notifications
-self.addEventListener('push', (event) => {
-    if (!event.data) return;
+async function syncProfile() {
+  // Similar implementation for profile sync
+}
+
+// Push Notifications
+self.addEventListener('push', event => {
+  console.log('Push message received');
+  
+  const options = {
+    body: 'У вас є нові оновлення!',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge-72x72.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: 1
+    },
+    actions: [
+      {
+        action: 'explore',
+        title: 'Переглянути',
+        icon: '/icons/checkmark.png'
+      },
+      {
+        action: 'close',
+        title: 'Закрити',
+        icon: '/icons/xmark.png'
+      }
+    ]
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification('disCard', options)
+  );
+});
+
+// Notification click handler
+self.addEventListener('notificationclick', event => {
+  console.log('Notification click received.');
+  
+  event.notification.close();
+  
+  if (event.action === 'explore') {
+    event.waitUntil(
+      clients.openWindow('/app.html')
+    );
+  }
+});
+
+// Message handler for communication with main app
+self.addEventListener('message', event => {
+  console.log('SW received message:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_NAME });
+  }
+  
+  if (event.data && event.data.type === 'CACHE_CARD_OFFLINE') {
+    event.waitUntil(cacheCardOffline(event.data.card));
+  }
+});
+
+// Offline storage helpers (using IndexedDB)
+async function getOfflineCards() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('discard-offline', 1);
     
-    const data = event.data.json();
-    
-    const options = {
-        body: data.body || 'У вас є нове повідомлення',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        tag: data.tag || 'general',
-        requireInteraction: data.requireInteraction || false,
-        actions: data.actions || [],
-        data: data.data || {}
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['cards'], 'readonly');
+      const store = transaction.objectStore('cards');
+      const getRequest = store.getAll();
+      
+      getRequest.onsuccess = () => resolve(getRequest.result);
+      getRequest.onerror = () => reject(getRequest.error);
     };
     
-    event.waitUntil(
-        self.registration.showNotification(data.title || 'Карти Лояльності', options)
-    );
-});
-
-// Notification click handling
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    
-    if (event.action) {
-        // Handle action clicks
-        console.log('Notification action clicked:', event.action);
-    } else {
-        // Handle notification click
-        event.waitUntil(
-            clients.matchAll({ type: 'window' }).then((clientList) => {
-                // If a window is already open, focus it
-                for (const client of clientList) {
-                    if (client.url.includes(self.location.origin) && 'focus' in client) {
-                        return client.focus();
-                    }
-                }
-                
-                // Otherwise, open a new window
-                if (clients.openWindow) {
-                    return clients.openWindow('/');
-                }
-            })
-        );
-    }
-});
-
-// Message handling from main thread
-self.addEventListener('message', (event) => {
-    const { type, data } = event.data;
-    
-    switch (type) {
-        case 'SKIP_WAITING':
-            self.skipWaiting();
-            break;
-            
-        case 'CLEAR_CACHE':
-            clearAllCaches();
-            break;
-            
-        case 'CACHE_URLS':
-            cacheUrls(data.urls);
-            break;
-            
-        default:
-            console.log('Service Worker: Unknown message type:', type);
-    }
-});
-
-// Utility functions
-async function clearAllCaches() {
-    const cacheNames = await caches.keys();
-    return Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('cards')) {
+        db.createObjectStore('cards', { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
 }
 
-async function cacheUrls(urls) {
-    const cache = await caches.open(DYNAMIC_CACHE);
-    return cache.addAll(urls);
+async function cacheCardOffline(cardData) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('discard-offline', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['cards'], 'readwrite');
+      const store = transaction.objectStore('cards');
+      const addRequest = store.add({
+        card: cardData,
+        timestamp: Date.now(),
+        token: localStorage.getItem('token')
+      });
+      
+      addRequest.onsuccess = () => resolve();
+      addRequest.onerror = () => reject(addRequest.error);
+    };
+  });
 }
+
+async function removeOfflineCard(id) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('discard-offline', 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction(['cards'], 'readwrite');
+      const store = transaction.objectStore('cards');
+      const deleteRequest = store.delete(id);
+      
+      deleteRequest.onsuccess = () => resolve();
+      deleteRequest.onerror = () => reject(deleteRequest.error);
+    };
+  });
+}
+
+// Notify clients
+async function notifyClient(type, data) {
+  const clients = await self.clients.matchAll();
+  clients.forEach(client => {
+    client.postMessage({ type, data });
+  });
+}
+
+// Periodic Background Sync (if supported)
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'cards-sync') {
+    event.waitUntil(syncCards());
+  }
+});
+
+// Share Target API (if the app is installed)
+self.addEventListener('share', event => {
+  console.log('Share event received:', event);
+  // Handle shared content
+});
 
 // Error handling
-self.addEventListener('error', (event) => {
-    console.error('Service Worker error:', event.error);
+self.addEventListener('error', event => {
+  console.error('Service Worker error:', event.error);
 });
 
-self.addEventListener('unhandledrejection', (event) => {
-    console.error('Service Worker unhandled promise rejection:', event.reason);
+self.addEventListener('unhandledrejection', event => {
+  console.error('Service Worker unhandled rejection:', event.reason);
 });
 
-console.log('Service Worker: Script loaded');
+console.log('Service Worker script loaded successfully');
+
+// Performance monitoring
+let swStartTime = Date.now();
+
+self.addEventListener('install', () => {
+  console.log(`SW install took ${Date.now() - swStartTime}ms`);
+});
+
+// Cache management - clean up old caches periodically
+async function cleanupOldCaches() {
+  const cacheNames = await caches.keys();
+  const oldCaches = cacheNames.filter(name => 
+    name.startsWith('discard-') && name !== CACHE_NAME
+  );
+  
+  return Promise.all(oldCaches.map(name => caches.delete(name)));
+}
+
+// Run cleanup on activate
+self.addEventListener('activate', event => {
+  event.waitUntil(cleanupOldCaches());
+});

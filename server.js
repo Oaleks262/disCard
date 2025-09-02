@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -40,6 +41,15 @@ app.use(cors({
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
+
+// App route - serve app.html for /app paths
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+
+app.get('/app/*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/loyalty-cards', {
@@ -189,7 +199,8 @@ app.post('/api/auth/register', [
         id: user._id,
         name: user.name,
         email: user.email,
-        language: user.language
+        language: user.language,
+        createdAt: user.createdAt
       },
       token,
       cards: []
@@ -232,7 +243,8 @@ app.post('/api/auth/login', [
         id: user._id,
         name: user.name,
         email: user.email,
-        language: user.language
+        language: user.language,
+        createdAt: user.createdAt
       },
       token,
       cards: user.cards
@@ -252,7 +264,8 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        language: user.language
+        language: user.language,
+        createdAt: user.createdAt
       },
       cards: user.cards
     });

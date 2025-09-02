@@ -97,6 +97,26 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Disable zoom/pinch on touch devices */
+* {
+  touch-action: manipulation;
+}
+
+html {
+  -webkit-text-size-adjust: none;
+  -moz-text-size-adjust: none;
+  -ms-text-size-adjust: none;
+}
+
+/* Disable double-tap zoom on buttons and interactive elements */
+button,
+input,
+select,
+textarea,
+a {
+  touch-action: manipulation;
+}
+
 /* Utility Classes */
 .hidden {
   display: none !important;
@@ -564,6 +584,11 @@ body {
   border-radius: var(--radius-md);
   text-align: center;
   transition: var(--transition);
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .code-type-option input:checked + .code-type-visual {
@@ -572,7 +597,7 @@ body {
 }
 
 .barcode-preview {
-  width: 60px;
+  width: 50px;
   height: 30px;
   background-image: repeating-linear-gradient(
     90deg,
@@ -582,16 +607,18 @@ body {
     transparent 4px
   );
   margin: 0 auto var(--spacing-sm);
+  flex-shrink: 0;
 }
 
 .qrcode-preview {
   width: 40px;
   height: 40px;
-  background-image: 
-    linear-gradient(90deg, var(--text-primary) 50%, transparent 50%),
-    linear-gradient(var(--text-primary) 50%, transparent 50%);
-  background-size: 8px 8px;
+  background-image: url('/icons/qr-site.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   margin: 0 auto var(--spacing-sm);
+  flex-shrink: 0;
 }
 
 .code-input-group {
@@ -1259,6 +1286,24 @@ body {
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+/* Desktop specific styles */
+@media (min-width: 769px) {
+  .code-type-visual {
+    min-height: 120px;
+    padding: var(--spacing-xl);
+  }
+  
+  .barcode-preview {
+    width: 60px;
+    height: 35px;
+  }
+  
+  .qrcode-preview {
+    width: 45px;
+    height: 45px;
   }
 }
 

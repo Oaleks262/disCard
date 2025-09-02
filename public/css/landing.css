@@ -429,12 +429,12 @@ body {
   bottom: 0;
   background-image: repeating-linear-gradient(
     90deg,
-    #000000 0px,
-    #000000 2px,
+    var(--text-primary) 0px,
+    var(--text-primary) 2px,
     transparent 2px,
     transparent 4px,
-    #000000 4px,
-    #000000 5px,
+    var(--text-primary) 4px,
+    var(--text-primary) 5px,
     transparent 5px,
     transparent 8px
   );
@@ -799,8 +799,8 @@ body {
 .mini-barcode {
   background-image: repeating-linear-gradient(
     90deg,
-    #000000 0px,
-    #000000 1px,
+    var(--text-primary) 0px,
+    var(--text-primary) 1px,
     transparent 1px,
     transparent 2px
   );
@@ -808,8 +808,8 @@ body {
 
 .mini-qr {
   background-image: 
-    linear-gradient(90deg, #000000 50%, transparent 50%),
-    linear-gradient(#000000 50%, transparent 50%);
+    linear-gradient(90deg, var(--text-primary) 50%, transparent 50%),
+    linear-gradient(var(--text-primary) 50%, transparent 50%);
   background-size: 4px 4px;
 }
 
@@ -852,7 +852,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-md);
   margin-bottom: var(--spacing-sm);
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
@@ -864,6 +864,8 @@ body {
   background: var(--primary);
   border-radius: 10px;
   position: relative;
+  margin-left: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .toggle::after {

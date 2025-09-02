@@ -20,6 +20,25 @@ const translations = {
       easyScanning: "Легке сканування",
       personalization: "Персоналізація"
     },
+    mockupCards: {
+      tabs: {
+        cards: "📱 Карти",
+        add: "➕ Додати", 
+        settings: "⚙️ Налаштування"
+      },
+      stores: {
+        atb: "АТБ",
+        silpo: "Сільпо",
+        eva: "EVA"
+      },
+      scanner: {
+        instruction: "Наведіть камеру на код"
+      },
+      settings: {
+        darkTheme: "🌙 Темна тема",
+        language: "🌍 Мова: Українська"
+      }
+    },
     installation: {
       title: "Як встановити додаток на телефон",
       android: {
@@ -118,7 +137,9 @@ const translations = {
       statistics: "Статистика",
       cardsCount: "Збережено карт",
       joinDate: "Дата реєстрації",
-      logout: "Вийти"
+      logout: "Вийти",
+      changePasswordBtn: "Змінити пароль",
+      noDateAvailable: "Дата недоступна"
     },
     
     // Settings
@@ -140,6 +161,7 @@ const translations = {
       noCardsSubtitle: "Додайте вашу першу картку лояльності",
       addCard: "Додати картку",
       cardName: "Назва картки",
+      cardNamePlaceholder: "Наприклад: АТБ",
       cardCode: "Код картки",
       codeType: "Тип коду",
       barcode: "Штрих-код",
@@ -182,6 +204,7 @@ const translations = {
       close: "Закрити",
       copy: "Копіювати",
       copied: "Скопійовано!",
+      copyFailed: "Помилка копіювання",
       loginSuccess: "Успішний вхід",
       registerSuccess: "Акаунт створено",
       logoutSuccess: "Ви вийшли з акаунту",
@@ -237,6 +260,25 @@ const translations = {
       allCards: "All cards in one place",
       easyScanning: "Easy scanning",
       personalization: "Personalization"
+    },
+    mockupCards: {
+      tabs: {
+        cards: "📱 Cards",
+        add: "➕ Add",
+        settings: "⚙️ Settings"
+      },
+      stores: {
+        atb: "ATB",
+        silpo: "Silpo", 
+        eva: "EVA"
+      },
+      scanner: {
+        instruction: "Point your camera at the code"
+      },
+      settings: {
+        darkTheme: "🌙 Dark theme",
+        language: "🌍 Language: English"
+      }
     },
     installation: {
       title: "How to install the app on your phone",
@@ -336,7 +378,9 @@ const translations = {
       statistics: "Statistics",
       cardsCount: "Saved cards",
       joinDate: "Join date",
-      logout: "Logout"
+      logout: "Logout",
+      changePasswordBtn: "Change password",
+      noDateAvailable: "No date available"
     },
     
     // Settings
@@ -358,6 +402,7 @@ const translations = {
       noCardsSubtitle: "Add your first loyalty card",
       addCard: "Add card",
       cardName: "Card name",
+      cardNamePlaceholder: "e.g.: Starbucks",
       cardCode: "Card code",
       codeType: "Code type",
       barcode: "Barcode",
@@ -400,6 +445,7 @@ const translations = {
       close: "Close",
       copy: "Copy",
       copied: "Copied!",
+      copyFailed: "Copy failed",
       loginSuccess: "Login successful",
       registerSuccess: "Account created",
       logoutSuccess: "You have been logged out",

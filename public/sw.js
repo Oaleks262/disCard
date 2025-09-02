@@ -1,20 +1,23 @@
 // Service Worker for disCard PWA
 
-const CACHE_NAME = 'discard-v1.0.0';
+const CACHE_NAME = 'discard-v1.1.0';
 const RUNTIME = 'runtime';
 const API_CACHE = 'api-cache';
 
-// Files to cache immediately
+// Files to cache immediately for the app
 const PRECACHE_URLS = [
-  '/',
-  '/index.html',
+  '/app',
+  '/app/',
   '/app.html',
-  '/css/landing.css',
   '/css/app.css',
-  '/js/landing.js',
   '/js/app.js',
+  '/js/api.js',
   '/js/i18n.js',
   '/manifest.json',
+  // Icons
+  '/icons/favicon-32x32.png',
+  '/icons/favicon-16x16.png',
+  '/icons/apple-touch-icon.png',
   // External libraries
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
@@ -79,6 +82,9 @@ self.addEventListener('fetch', event => {
   } else if (isStaticAsset(url.pathname)) {
     // Static assets - Cache First
     event.respondWith(cacheFirstWithNetworkFallback(request));
+  } else if (url.pathname.startsWith('/app')) {
+    // App routes - serve app.html for SPA routing
+    event.respondWith(serveAppShell(request));
   } else if (url.pathname === '/' || url.pathname.endsWith('.html')) {
     // HTML pages - Stale While Revalidate
     event.respondWith(staleWhileRevalidate(request));
@@ -163,6 +169,37 @@ async function updateCacheInBackground(request) {
     cache.put(request, networkResponse);
   } catch (error) {
     // Silent fail for background updates
+  }
+}
+
+// Serve app shell for SPA routes
+async function serveAppShell(request) {
+  try {
+    // Try network first for the app shell
+    const networkResponse = await fetch('/app.html');
+    
+    if (networkResponse.status === 200) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put('/app.html', networkResponse.clone());
+      return networkResponse;
+    }
+    
+    throw new Error('Network failed');
+  } catch (error) {
+    // Fallback to cached app shell
+    console.log('Network failed for app shell, using cache');
+    const cache = await caches.open(CACHE_NAME);
+    const cachedResponse = await cache.match('/app.html');
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Final fallback
+    return new Response('App not available offline', { 
+      status: 503,
+      statusText: 'Service Unavailable'
+    });
   }
 }
 

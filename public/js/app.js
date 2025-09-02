@@ -199,7 +199,9 @@ class LoyaltyCardsApp {
     // Navigation
     document.querySelectorAll('[data-tab]').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.preventDefault();
         const tab = e.currentTarget.dataset.tab;
+        console.log(`📱 Navigation click: ${tab}`);
         this.switchTab(tab);
       });
     });
@@ -808,19 +810,47 @@ class LoyaltyCardsApp {
 
   // UI Methods
   switchTab(tabName) {
+    console.log(`🔄 Switching to tab: ${tabName}`);
+    
     // Update navigation
     document.querySelectorAll('.nav-item').forEach(item => {
       item.classList.remove('active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    const targetNavItem = document.querySelector(`[data-tab="${tabName}"]`);
+    if (targetNavItem) {
+      targetNavItem.classList.add('active');
+      console.log(`✅ Added active class to nav item: ${tabName}`);
+    } else {
+      console.error(`❌ Could not find nav item with data-tab="${tabName}"`);
+      // Try alternative selector as fallback
+      const altNavItem = document.querySelector(`.nav-item[data-tab="${tabName}"]`);
+      if (altNavItem) {
+        altNavItem.classList.add('active');
+        console.log(`✅ Added active class using alternative selector: ${tabName}`);
+      }
+    }
 
     // Update panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
       panel.classList.remove('active');
     });
-    document.getElementById(`${tabName}-panel`).classList.add('active');
+    
+    const targetPanel = document.getElementById(`${tabName}-panel`);
+    if (targetPanel) {
+      targetPanel.classList.add('active');
+      console.log(`✅ Added active class to panel: ${tabName}-panel`);
+    } else {
+      console.error(`❌ Could not find panel with id="${tabName}-panel"`);
+    }
 
     AppState.currentTab = tabName;
+
+    // Scroll to top of the page when switching tabs
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
 
     // Load data if needed
     if (tabName === 'cards' && AppState.cards.length === 0 && AppState.user) {
@@ -838,6 +868,11 @@ class LoyaltyCardsApp {
     document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-container').classList.remove('hidden');
+    
+    // Initialize default active tab if no tab is currently active
+    if (!AppState.currentTab) {
+      this.switchTab('cards');
+    }
     
     // Close any open modals
     this.closeAllModals();
@@ -1558,6 +1593,8 @@ class LoyaltyCardsApp {
     const joinDate = document.getElementById('join-date');
     if (AppState.user.createdAt) {
       joinDate.textContent = window.i18n.formatDate(AppState.user.createdAt);
+    } else {
+      joinDate.textContent = this.safeT('profile.noDateAvailable', 'Дата недоступна');
     }
 
     // Update language selector

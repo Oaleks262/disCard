@@ -410,9 +410,21 @@ class LoyaltyCardsApp {
   }
 
   async checkAuthentication() {
-    const token = localStorage.getItem('token');
+    // Check if we have a token in localStorage and set it in API client
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    
+    if (token) {
+      window.api.setToken(token);
+      // Migrate old token key to new one
+      if (localStorage.getItem('token')) {
+        localStorage.setItem('authToken', token);
+        localStorage.removeItem('token');
+      }
+    }
     
     if (!token) {
+      // Try to load from localStorage for offline mode
+      this.loadLocalData();
       this.showAuthScreen();
       return;
     }
@@ -423,6 +435,9 @@ class LoyaltyCardsApp {
       if (response.user) {
         AppState.user = response.user;
         AppState.cards = response.cards || [];
+        
+        // Sync data between server and localStorage
+        await this.syncData();
         
         // Update language from user profile
         if (response.user.language) {
@@ -440,6 +455,8 @@ class LoyaltyCardsApp {
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      window.api.setToken(null);
       this.showAuthScreen();
     }
   }
@@ -466,7 +483,7 @@ class LoyaltyCardsApp {
       });
 
       if (response.token) {
-        localStorage.setItem('token', response.token);
+        // API client handles token storage
         AppState.user = response.user;
         AppState.cards = response.cards || [];
         
@@ -533,7 +550,7 @@ class LoyaltyCardsApp {
       console.log('Registration response:', response);
 
       if (response.token) {
-        localStorage.setItem('token', response.token);
+        // API client handles token storage
         AppState.user = response.user;
         AppState.cards = response.cards || [];
         
@@ -553,11 +570,11 @@ class LoyaltyCardsApp {
   }
 
   handleLogout() {
-    localStorage.removeItem('token');
+    window.api.logout();
     AppState.user = null;
     AppState.cards = [];
     
-    this.showToast('success', t('messages.logoutSuccess'));
+    this.showToast('success', this.safeT('messages.logoutSuccess', 'Вихід виконано'));
     this.showAuthScreen();
   }
 
@@ -569,17 +586,17 @@ class LoyaltyCardsApp {
     const confirmPassword = document.getElementById('confirm-password').value;
     
     if (!currentPassword || !newPassword || !confirmPassword) {
-      this.showToast('error', t('messages.fillAllFields'));
+      this.showToast('error', this.safeT('messages.fillAllFields', 'Заповніть всі поля'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      this.showToast('error', t('messages.passwordsDontMatch'));
+      this.showToast('error', this.safeT('messages.passwordsDontMatch', 'Паролі не збігаються'));
       return;
     }
 
     if (newPassword.length < 6) {
-      this.showToast('error', t('messages.passwordTooShort'));
+      this.showToast('error', this.safeT('messages.passwordTooShort', 'Пароль занадто короткий'));
       return;
     }
 
@@ -592,11 +609,11 @@ class LoyaltyCardsApp {
         body: JSON.stringify({ currentPassword, newPassword })
       });
 
-      this.showToast('success', t('messages.passwordChanged'));
+      this.showToast('success', this.safeT('messages.passwordChanged', 'Пароль змінено'));
       e.target.reset();
     } catch (error) {
       console.error('Change password error:', error);
-      this.showToast('error', error.message || t('messages.serverError'));
+      this.showToast('error', error.message || this.safeT('messages.serverError', 'Помилка сервера'));
     } finally {
       this.setButtonLoading(submitBtn, false);
     }
@@ -606,7 +623,7 @@ class LoyaltyCardsApp {
     const nameSpan = document.getElementById('user-name');
     const currentName = nameSpan.textContent;
     
-    const newName = await this.showPrompt(t('auth.name'), currentName);
+    const newName = await this.showPrompt(this.safeT('auth.name', 'Ім\'я'), currentName);
     if (newName && newName !== currentName) {
       try {
         const response = await this.apiCall('/auth/profile', {
@@ -616,10 +633,10 @@ class LoyaltyCardsApp {
 
         AppState.user = response.user;
         this.updateProfile();
-        this.showToast('success', t('messages.profileUpdated'));
+        this.showToast('success', this.safeT('messages.profileUpdated', 'Профіль оновлено'));
       } catch (error) {
         console.error('Update name error:', error);
-        this.showToast('error', error.message || t('messages.serverError'));
+        this.showToast('error', error.message || this.safeT('messages.serverError', 'Помилка сервера'));
       }
     }
   }
@@ -941,6 +958,9 @@ class LoyaltyCardsApp {
           throw new Error('QRCode library not loaded');
         }
         
+        // Set canvas class for QR code styling
+        canvas.className = 'qr-canvas';
+        
         // Clear canvas before generating new QR code
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -958,6 +978,9 @@ class LoyaltyCardsApp {
         if (typeof JsBarcode === 'undefined') {
           throw new Error('JsBarcode library not loaded');
         }
+        
+        // Set canvas class for barcode styling
+        canvas.className = 'barcode-canvas';
         
         JsBarcode(canvas, card.code, {
           width: 3,
@@ -1452,6 +1475,9 @@ class LoyaltyCardsApp {
         
         console.log('🔄 Generating QR code for modal:', card.name, 'with code:', card.code);
         
+        // Set canvas class for QR code styling
+        canvas.className = 'qr-canvas';
+        
         // Clear canvas before generating new QR code
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1471,6 +1497,9 @@ class LoyaltyCardsApp {
         if (typeof JsBarcode === 'undefined') {
           throw new Error('JsBarcode library not loaded');
         }
+        
+        // Set canvas class for barcode styling
+        canvas.className = 'barcode-canvas';
         
         JsBarcode(canvas, card.code, {
           width: 3,
@@ -1509,10 +1538,10 @@ class LoyaltyCardsApp {
 
     try {
       await navigator.clipboard.writeText(this.currentCard.code);
-      this.showToast('success', t('messages.copied'));
+      this.showToast('success', this.safeT('messages.copied', 'Скопійовано'));
     } catch (error) {
       console.error('Copy error:', error);
-      this.showToast('error', 'Copy failed');
+      this.showToast('error', this.safeT('messages.copyFailed', 'Помилка копіювання'));
     }
   }
 
@@ -1545,58 +1574,128 @@ class LoyaltyCardsApp {
     }
   }
 
-  // API Methods
+  // API Methods - Use API client directly
   async apiCall(endpoint, options = {}) {
-    const url = API_CONFIG.baseURL + endpoint;
-    const token = localStorage.getItem('token');
-    
-    console.log('=== API Call ===');
-    console.log('Endpoint:', endpoint);
-    console.log('Full URL:', url);
-    console.log('Has token:', !!token);
-    console.log('Options:', options);
-    
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
-      },
-      ...options
-    };
-    
-    console.log('Request config:', config);
-
     try {
-      console.log('Making fetch request...');
-      const response = await fetch(url, config);
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-      
-      if (response.status === 401) {
-        console.log('Unauthorized, clearing token');
-        localStorage.removeItem('token');
-        this.showAuthScreen();
-        throw new Error('Unauthorized');
+      // Map old API calls to new API client methods
+      const method = options.method || 'GET';
+      const body = options.body ? JSON.parse(options.body) : undefined;
+
+      // Handle auth endpoints
+      if (endpoint === '/auth/login') {
+        return await window.api.login(body);
+      }
+      if (endpoint === '/auth/register') {
+        return await window.api.register(body);
+      }
+      if (endpoint === '/auth/me') {
+        const profile = await window.api.getProfile();
+        return { user: profile.user, cards: profile.user.cards || [] };
+      }
+      if (endpoint === '/auth/profile') {
+        return await window.api.updateProfile(body);
+      }
+      if (endpoint === '/auth/password') {
+        return await window.api.changePassword(body);
       }
       
-      if (!response.ok) {
-        console.log('Response not ok, trying to parse error');
-        const errorData = await response.json().catch(() => ({}));
-        console.log('Error data:', errorData);
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      // Handle card endpoints
+      if (endpoint === '/cards' && method === 'POST') {
+        await window.api.createCard(body);
+        // Return updated cards list
+        const updatedProfile = await window.api.getProfile();
+        return { cards: updatedProfile.user.cards || [] };
+      }
+      if (endpoint.startsWith('/cards/') && method === 'DELETE') {
+        const cardId = endpoint.replace('/cards/', '');
+        await window.api.deleteCard(cardId);
+        // Return updated cards list
+        const updatedProfile = await window.api.getProfile();
+        return { cards: updatedProfile.user.cards || [] };
       }
       
-      console.log('Parsing response JSON...');
-      const result = await response.json();
-      console.log('API response result:', result);
-      return result;
+      // Fallback to direct API client request
+      return await window.api.request(endpoint, options);
+
     } catch (error) {
-      console.error('API call error:', error);
-      if (!AppState.isOnline) {
-        const networkMessage = window.t ? t('messages.networkError') : 'Помилка мережі';
-        throw new Error(networkMessage);
+      if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+        window.api.setToken(null);
+        this.showAuthScreen();
       }
       throw error;
+    }
+  }
+
+  // Data Synchronization Methods
+  loadLocalData() {
+    console.log('📂 Loading local data for offline mode...');
+    
+    try {
+      const localCards = localStorage.getItem('cards');
+      const localUser = localStorage.getItem('user');
+      
+      if (localCards) {
+        AppState.cards = JSON.parse(localCards);
+        console.log(`Loaded ${AppState.cards.length} cards from localStorage`);
+      }
+      
+      if (localUser) {
+        AppState.user = JSON.parse(localUser);
+        console.log('Loaded user data from localStorage');
+      }
+    } catch (error) {
+      console.error('Error loading local data:', error);
+      AppState.cards = [];
+      AppState.user = null;
+    }
+  }
+
+  saveLocalData() {
+    console.log('💾 Saving data to localStorage...');
+    
+    try {
+      if (AppState.cards) {
+        localStorage.setItem('cards', JSON.stringify(AppState.cards));
+      }
+      
+      if (AppState.user) {
+        localStorage.setItem('user', JSON.stringify(AppState.user));
+      }
+    } catch (error) {
+      console.error('Error saving local data:', error);
+    }
+  }
+
+  async syncData() {
+    if (!window.api.isOnline() || !window.api.isAuthenticated()) {
+      console.log('⚠️ Cannot sync: offline or not authenticated');
+      return false;
+    }
+
+    try {
+      console.log('🔄 Starting data synchronization...');
+      
+      const success = await window.api.syncData();
+      
+      if (success) {
+        // Update AppState with synced data
+        const localCards = localStorage.getItem('cards');
+        if (localCards) {
+          AppState.cards = JSON.parse(localCards);
+        }
+        
+        // Save to localStorage as backup
+        this.saveLocalData();
+        
+        console.log('✅ Data synchronized successfully');
+        return true;
+      } else {
+        console.log('❌ Sync failed, continuing with local data');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Sync error:', error);
+      return false;
     }
   }
 
@@ -1649,12 +1748,12 @@ class LoyaltyCardsApp {
   }
 
   handleOnlineStatus() {
-    this.showToast('success', t('messages.connectionRestored'));
+    this.showToast('success', this.safeT('messages.connectionRestored', 'З\'єднання відновлено'));
     // Sync any pending offline actions
   }
 
   handleOfflineStatus() {
-    this.showToast('warning', t('messages.offlineMode'));
+    this.showToast('warning', this.safeT('messages.offlineMode', 'Офлайн режим'));
   }
 
   escapeHtml(text) {

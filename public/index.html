@@ -106,7 +106,7 @@
         </section>
 
         <!-- Features Section -->
-        <section class="features">
+        <section class="features" id="features">
             <div class="container">
                 <div class="features-grid">
                     <div class="feature-card">
@@ -143,7 +143,7 @@
         </section>
 
         <!-- Installation Section -->
-        <section class="installation">
+        <section class="installation" id="installation">
             <div class="container">
                 <h2 class="section-title" data-i18n="installation.title">Як встановити додаток на телефон</h2>
                 <div class="installation-tabs">
@@ -235,7 +235,7 @@
         </section>
 
         <!-- Screenshots Section -->
-        <section class="screenshots">
+        <section class="screenshots" id="screenshots">
             <div class="container">
                 <h2 class="section-title" data-i18n="screenshots.title">Простий у використанні інтерфейс</h2>
                 <div class="screenshots-grid">
@@ -303,22 +303,49 @@
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
-                <div class="footer-brand">
-                    <div class="logo">
-                        <svg class="logo-icon" viewBox="0 0 24 24" width="24" height="24">
-                            <rect x="2" y="4" width="20" height="14" rx="2" fill="currentColor"/>
-                            <rect x="4" y="8" width="16" height="2" fill="#fff"/>
-                            <rect x="4" y="12" width="12" height="2" fill="#fff"/>
-                        </svg>
-                        <span class="logo-text">disCard</span>
+                <div class="footer-main">
+                    <div class="footer-brand">
+                        <div class="logo">
+                            <svg class="logo-icon" viewBox="0 0 24 24" width="32" height="32">
+                                <rect x="2" y="4" width="20" height="14" rx="2" fill="currentColor"/>
+                                <rect x="4" y="8" width="16" height="2" fill="#fff"/>
+                                <rect x="4" y="12" width="12" height="2" fill="#fff"/>
+                            </svg>
+                            <span class="logo-text">disCard</span>
+                        </div>
+                        <p class="footer-description" data-i18n="footer.description">
+                            Сучасний додаток для управління картами лояльності
+                        </p>
                     </div>
-                    <p class="footer-description" data-i18n="footer.description">
-                        Сучасний додаток для управління картами лояльності
-                    </p>
+                    
+                    <div class="footer-features">
+                        <h4 class="footer-title" data-i18n="footer.features.title">Особливості</h4>
+                        <ul class="footer-list">
+                            <li data-i18n="footer.features.pwa">PWA додаток</li>
+                            <li data-i18n="footer.features.offline">Робота офлайн</li>
+                            <li data-i18n="footer.features.secure">Безпечне зберігання</li>
+                            <li data-i18n="footer.features.free">Безкоштовно</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="footer-support">
+                        <h4 class="footer-title" data-i18n="footer.support.title">Підтримка</h4>
+                        <ul class="footer-list">
+                            <li><a href="#installation" class="footer-link" data-i18n="footer.support.install">Як встановити</a></li>
+                            <li><a href="#features" class="footer-link" data-i18n="footer.support.features">Можливості</a></li>
+                            <li><a href="#screenshots" class="footer-link" data-i18n="footer.support.guide">Інструкція</a></li>
+                        </ul>
+                    </div>
                 </div>
                 
-                <div class="footer-info">
-                    <p>&copy; 2024 disCard. <span data-i18n="footer.rights">Всі права захищені.</span></p>
+                <div class="footer-bottom">
+                    <div class="footer-info">
+                        <p>&copy; 2024 disCard. <span data-i18n="footer.rights">Всі права захищені.</span></p>
+                    </div>
+                    <div class="footer-tech">
+                        <span class="tech-badge">PWA</span>
+                        <span class="tech-badge">Offline Ready</span>
+                    </div>
                 </div>
             </div>
         </div>

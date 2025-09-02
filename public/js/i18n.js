@@ -69,7 +69,20 @@ const translations = {
     },
     footer: {
       description: "Сучасний додаток для управління картами лояльності",
-      rights: "Всі права захищені."
+      rights: "Всі права захищені.",
+      features: {
+        title: "Особливості",
+        pwa: "PWA додаток",
+        offline: "Робота офлайн",
+        secure: "Безпечне зберігання",
+        free: "Безкоштовно"
+      },
+      support: {
+        title: "Підтримка",
+        install: "Як встановити",
+        features: "Можливості",
+        guide: "Інструкція"
+      }
     },
     
     // App Navigation
@@ -139,7 +152,8 @@ const translations = {
       scanCode: "Сканувати код",
       manualEntry: "Введіть код або скануйте",
       scanInstructions: "Наведіть камеру на код для сканування",
-      created: "Створено"
+      created: "Створено",
+      codeWillAppear: "Код з'явиться тут"
     },
     
     // Scanner
@@ -150,7 +164,8 @@ const translations = {
       notFound: "Камера не знайдена",
       scanning: "Сканування...",
       success: "Код успішно відсканований!",
-      error: "Помилка сканування"
+      error: "Помилка сканування",
+      barcodeUnavailable: "Штрих-код недоступний"
     },
     
     // Messages
@@ -272,7 +287,20 @@ const translations = {
     },
     footer: {
       description: "Modern app for managing loyalty cards",
-      rights: "All rights reserved."
+      rights: "All rights reserved.",
+      features: {
+        title: "Features",
+        pwa: "PWA App",
+        offline: "Works Offline",
+        secure: "Secure Storage",
+        free: "Free"
+      },
+      support: {
+        title: "Support",
+        install: "How to Install",
+        features: "Features",
+        guide: "Guide"
+      }
     },
     
     // App Navigation
@@ -342,7 +370,8 @@ const translations = {
       scanCode: "Scan code",
       manualEntry: "Enter code or scan",
       scanInstructions: "Point your camera at the code to scan",
-      created: "Created"
+      created: "Created",
+      codeWillAppear: "Code will appear here"
     },
     
     // Scanner
@@ -353,7 +382,8 @@ const translations = {
       notFound: "Camera not found",
       scanning: "Scanning...",
       success: "Code scanned successfully!",
-      error: "Scanning error"
+      error: "Scanning error",
+      barcodeUnavailable: "Barcode unavailable"
     },
     
     // Messages

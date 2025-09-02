@@ -224,7 +224,7 @@
                     ctx.fillStyle = '#000';
                     ctx.font = '14px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText('Штрих-код недоступний', canvas.width/2, canvas.height/2);
+                    ctx.fillText(window.i18n ? window.i18n.t('scanner.barcodeUnavailable') : 'Штрих-код недоступний', canvas.width/2, canvas.height/2);
                     console.warn('Using JsBarcode fallback text');
                 };
             };
@@ -398,7 +398,7 @@
                 <div class="panel-header">
                     <h1 class="panel-title" data-i18n="tabs.cards">Карти</h1>
                     <div class="search-container">
-                        <input type="text" class="search-input" placeholder="Пошук карт..." id="cards-search" data-i18n-placeholder="search.placeholder">
+                        <input type="text" class="search-input" placeholder="Пошук карт..." id="cards-search" data-i18n-placeholder="cards.searchPlaceholder">
                         <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20">
                             <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
                             <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2"/>
@@ -581,8 +581,8 @@
                         <h3 data-i18n="settings.theme">Тема</h3>
                         <div class="setting-item">
                             <div class="setting-info">
-                                <span class="setting-label">Вигляд додатку</span>
-                                <span class="setting-description">Оберіть світлу або темну тему</span>
+                                <span class="setting-label" data-i18n="settings.appearance">Вигляд додатку</span>
+                                <span class="setting-description" data-i18n="settings.themeDescription">Оберіть світлу або темну тему</span>
                             </div>
                             <div class="theme-selector">
                                 <label class="theme-option">
@@ -609,8 +609,8 @@
                         <h3 data-i18n="settings.language">Мова</h3>
                         <div class="setting-item">
                             <div class="setting-info">
-                                <span class="setting-label">Мова інтерфейсу</span>
-                                <span class="setting-description">Оберіть мову додатку</span>
+                                <span class="setting-label" data-i18n="settings.interfaceLanguage">Мова інтерфейсу</span>
+                                <span class="setting-description" data-i18n="settings.languageDescription">Оберіть мову додатку</span>
                             </div>
                             <div class="language-selector">
                                 <label class="language-option">
@@ -679,7 +679,7 @@
             <div class="modal-body">
                 <div class="modal-code-container">
                     <canvas id="modal-canvas"></canvas>
-                    <p class="modal-code-text" id="modal-code-text">Code will appear here</p>
+                    <p class="modal-code-text" id="modal-code-text" data-i18n="cards.codeWillAppear">Код з'явиться тут</p>
                 </div>
                 <div class="modal-actions">
                     <button class="modal-action-btn" id="copy-code-btn">
@@ -687,14 +687,14 @@
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
                             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="2" fill="none"/>
                         </svg>
-                        Копіювати код
+                        <span data-i18n="cards.copyCode">Копіювати код</span>
                     </button>
                     <button class="modal-action-btn danger" id="delete-card-btn">
                         <svg viewBox="0 0 24 24" width="20" height="20">
                             <polyline points="3,6 5,6 21,6" stroke="currentColor" stroke-width="2" fill="none"/>
                             <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="2" fill="none"/>
                         </svg>
-                        Видалити картку
+                        <span data-i18n="cards.deleteCard">Видалити картку</span>
                     </button>
                 </div>
             </div>
@@ -731,6 +731,7 @@
 
     <!-- Scripts -->
     <script src="/js/i18n.js"></script>
+    <script src="/js/api.js"></script>
     <script src="/js/app.js"></script>
     
     <!-- Service Worker Registration -->

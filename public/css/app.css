@@ -158,6 +158,7 @@ body {
   border-top: 4px solid var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin: 0 auto;
 }
 
 @keyframes spin {
@@ -352,6 +353,8 @@ body {
 .tab-panel.active {
   display: flex;
   flex-direction: column;
+  margin-bottom: 80px;
+
 }
 
 .panel-header {
@@ -698,12 +701,24 @@ body {
   font-size: 1rem;
   color: var(--text-primary);
   font-weight: var(--font-weight-medium);
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .field-with-copy {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.field-with-copy .field-value {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .copy-button, .edit-button {
@@ -750,6 +765,15 @@ body {
   font-weight: var(--font-weight-bold);
   color: var(--primary);
   margin-bottom: var(--spacing-sm);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Special styling for date field */
+#join-date {
+  font-size: 1.2rem;
+  line-height: 1.3;
 }
 
 .stat-label {
@@ -1043,10 +1067,24 @@ body {
 }
 
 .modal-code-container canvas {
-  max-width: 200px;
-  height: 200px;
   margin-bottom: var(--spacing-md);
   transition: opacity 0.3s ease;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+/* Canvas for QR codes - square */
+.modal-code-container canvas.qr-canvas {
+  max-width: 200px;
+  height: 200px;
+  width: 200px;
+}
+
+/* Canvas for barcodes - rectangular */
+.modal-code-container canvas.barcode-canvas {
+  max-width: 280px;
+  height: 120px;
+  width: 280px;
 }
 
 .modal-code-text {
@@ -1248,14 +1286,38 @@ body {
     grid-template-columns: 1fr 1fr;
   }
   
+  .stat-value {
+    font-size: 1.8rem;
+  }
+  
+  #join-date {
+    font-size: 1.1rem;
+  }
+  
   .theme-selector, .language-selector {
-    flex-direction: column;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
     gap: var(--spacing-sm);
   }
   
   .setting-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+  
+  .profile-content {
+    max-width: none;
+    margin: 0;
+  }
+  
+  .profile-section {
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .profile-field {
+    margin-bottom: var(--spacing-md);
   }
   
   .modal-actions {
@@ -1284,8 +1346,8 @@ body {
   
   .modal-content {
     margin: var(--spacing-sm);
-    max-width: none;
-    width: auto;
+    /* max-width: none;
+    width: auto; */
   }
   
   .bottom-nav {
@@ -1294,6 +1356,59 @@ body {
   
   .nav-label {
     font-size: 0.6rem;
+  }
+  
+  /* Responsive canvas sizes for mobile */
+  .modal-code-container canvas.qr-canvas {
+    max-width: 160px;
+    height: 160px;
+    width: 160px;
+  }
+  
+  .modal-code-container canvas.barcode-canvas {
+    max-width: 250px;
+    height: 100px;
+    width: 250px;
+  }
+  
+  .profile-section {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .profile-section h3 {
+    font-size: 1.1rem;
+  }
+  
+  .profile-field {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .copy-button, .edit-button {
+    padding: var(--spacing-xs);
+    min-width: 36px;
+    height: 36px;
+  }
+  
+  .field-with-copy {
+    gap: var(--spacing-xs);
+  }
+  
+  .field-value {
+    font-size: 0.9rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  #join-date {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  
+  .stat-card {
+    padding: var(--spacing-md);
   }
 }
 

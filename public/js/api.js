@@ -42,11 +42,30 @@ class APIClient {
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+                
+                // Handle 401 errors (token expired/invalid)
+                if (response.status === 401) {
+                    console.log('Token expired or invalid, clearing authentication');
+                    this.setToken(null);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('token');
+                    window.location.reload(); // Force reload to show auth screen
+                    return;
+                }
+                
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
 
             const data = await response.json();
             console.log('API Response:', data);
+            
+            // Check for refreshed token in response headers
+            const newToken = response.headers.get('X-New-Token');
+            if (newToken) {
+                console.log('🔄 Token refreshed automatically');
+                this.setToken(newToken);
+            }
+            
             return data;
         } catch (error) {
             console.error('API Error:', error);

@@ -48,6 +48,10 @@
   
   /* Transitions */
   --transition: all 0.2s ease;
+  
+  /* Pull-to-refresh */
+  --ptr-height: 60px;
+  --ptr-threshold: 80px;
   --transition-slow: all 0.3s ease;
   
   /* Z-index */
@@ -1831,4 +1835,89 @@ input:focus-visible,
     width: calc(100% - var(--spacing-xs)) !important;
     max-width: none !important;
   }
+}
+
+/* Pull-to-refresh styles */
+.pull-to-refresh-container {
+  position: relative;
+  overflow: hidden;
+  height: 100vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pull-to-refresh-indicator {
+  position: absolute;
+  top: calc(-1 * var(--ptr-height));
+  left: 0;
+  right: 0;
+  height: var(--ptr-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-slow);
+  z-index: var(--z-header);
+}
+
+.pull-to-refresh-indicator.visible {
+  transform: translateY(var(--ptr-height));
+}
+
+.pull-to-refresh-indicator.refreshing {
+  transform: translateY(var(--ptr-height));
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.ptr-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: var(--spacing-sm);
+  transition: var(--transition);
+}
+
+.ptr-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.ptr-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.ptr-text {
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+.pull-to-refresh-indicator.refreshing .ptr-text {
+  color: var(--text-inverse);
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* PWA specific adjustments */
+@media (display-mode: standalone) {
+  .pull-to-refresh-container {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Disable native pull-to-refresh when custom is active */
+body.ptr-active {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: auto;
+}
+
+/* Main content wrapper for pull-to-refresh */
+.app-content {
+  transition: var(--transition-slow);
+}
+
+.app-content.ptr-pulling {
+  transform: translateY(var(--ptr-threshold));
 }

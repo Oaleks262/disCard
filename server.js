@@ -127,7 +127,7 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 
 const User = mongoose.model('User', userSchema);
 
-// JWT middleware
+// JWT middleware with automatic token refresh
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -142,7 +142,19 @@ const authenticateToken = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
+    
     req.user = user;
+    
+    // Generate new token with extended expiry (30 days from now)
+    const newToken = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'fallback-secret-key',
+      { expiresIn: '30d' }
+    );
+    
+    // Add new token to response headers for client to update
+    res.set('X-New-Token', newToken);
+    
     next();
   } catch (error) {
     res.status(403).json({ error: 'Invalid token' });
@@ -191,7 +203,7 @@ app.post('/api/auth/register', [
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '30d' }
     );
 
     res.status(201).json({
@@ -235,7 +247,7 @@ app.post('/api/auth/login', [
     const token = jwt.sign(
       { userId: user._id },
       process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
+      { expiresIn: '30d' }
     );
 
     res.json({

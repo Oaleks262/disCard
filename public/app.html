@@ -5,12 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>disCard - Карти лояльності</title>
     
-    <!-- Meta tags -->
-    <meta name="description" content="Управління картами лояльності">
+    <!-- SEO Meta tags -->
+    <meta name="description" content="Увійдіть у свій акаунт disCard та керуйте всіма картами лояльності в одному зручному додатку. Сканування, збереження, використання карток магазинів.">
+    <meta name="keywords" content="вхід discard, карти лояльності додаток, мій акаунт, PWA, офлайн карти">
+    <meta name="author" content="disCard Team">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="webapp">
+    <meta property="og:url" content="https://discard.app/app">
+    <meta property="og:title" content="disCard App - Мої карти лояльності">
+    <meta property="og:description" content="Увійдіть у додаток disCard та керуйте всіма картами лояльності">
+    <meta property="og:image" content="https://discard.app/icons/og-app.png">
+    <meta property="og:site_name" content="disCard">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="app">
+    <meta name="twitter:title" content="disCard App - Мої карти лояльності">
+    <meta name="twitter:description" content="Увійдіть у додаток disCard та керуйте всіма картами лояльності">
+    <meta name="twitter:image" content="https://discard.app/icons/twitter-app.png">
+
+    <!-- PWA Meta -->
     <meta name="theme-color" content="#0066FF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="disCard">
+    <link rel="canonical" href="https://discard.app/app">
     
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
@@ -295,6 +315,14 @@
     </script>
 </head>
 <body>
+    <!-- Pull-to-refresh indicator -->
+    <div class="pull-to-refresh-indicator" id="ptr-indicator">
+        <svg class="ptr-icon" id="ptr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1v6m0 0l4-4m-4 4L8 3"/>
+        </svg>
+        <span class="ptr-text" id="ptr-text" data-i18n="pullToRefresh">Потягніть для оновлення</span>
+    </div>
+
     <!-- Loading Screen -->
     <div class="loading-screen" id="loading-screen">
         <div class="loading-content">
@@ -369,7 +397,7 @@
     </div>
 
     <!-- Main App -->
-    <div class="app-container hidden" id="app-container">
+    <div class="app-container hidden pull-to-refresh-container" id="app-container">
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">

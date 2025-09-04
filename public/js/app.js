@@ -51,6 +51,7 @@ class LoyaltyCardsApp {
     
     this.setupServiceWorker();
     this.setupOfflineHandling();
+    this.setupPullToRefresh();
     this.initializeTheme();
     
     // Check if i18n is available
@@ -361,6 +362,25 @@ class LoyaltyCardsApp {
       AppState.isOnline = false;
       this.handleOfflineStatus();
     });
+
+    // App focus/resume handling - check authentication and refresh data
+    window.addEventListener('focus', () => {
+      this.handleAppResume();
+    });
+
+    // Handle page visibility change (mobile browser focus)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        this.handleAppResume();
+      }
+    });
+
+    // Handle page show event (when navigating back)
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        this.handleAppResume();
+      }
+    });
   }
 
   async setupServiceWorker() {
@@ -391,12 +411,249 @@ class LoyaltyCardsApp {
     }
   }
 
+  setupPullToRefresh() {
+    console.log('🔄 Setting up pull-to-refresh...');
+    
+    // Initialize pull-to-refresh state
+    this.ptrState = {
+      pulling: false,
+      startY: 0,
+      currentY: 0,
+      threshold: 80,
+      maxDistance: 120,
+      refreshing: false
+    };
+
+    // Get elements
+    this.ptrIndicator = document.getElementById('ptr-indicator');
+    this.ptrIcon = document.getElementById('ptr-icon');
+    this.ptrText = document.getElementById('ptr-text');
+    this.appContainer = document.getElementById('app-container');
+
+    if (!this.ptrIndicator || !this.appContainer) {
+      console.warn('Pull-to-refresh elements not found');
+      return;
+    }
+
+    // Touch event handlers
+    this.appContainer.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+    this.appContainer.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
+    this.appContainer.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
+
+    // Mouse events for desktop testing
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      this.appContainer.addEventListener('mousedown', this.handleMouseDown.bind(this));
+      this.appContainer.addEventListener('mousemove', this.handleMouseMove.bind(this));
+      this.appContainer.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    }
+
+    console.log('✅ Pull-to-refresh initialized');
+  }
+
+  handleTouchStart(e) {
+    // Only handle if at top of scroll
+    if (this.appContainer.scrollTop > 0) return;
+    
+    this.ptrState.startY = e.touches[0].clientY;
+    this.ptrState.pulling = true;
+    document.body.classList.add('ptr-active');
+  }
+
+  handleTouchMove(e) {
+    if (!this.ptrState.pulling || this.ptrState.refreshing) return;
+
+    this.ptrState.currentY = e.touches[0].clientY;
+    const deltaY = this.ptrState.currentY - this.ptrState.startY;
+
+    // Only handle downward pulls
+    if (deltaY <= 0) return;
+
+    // Prevent default scrolling when pulling
+    e.preventDefault();
+
+    // Limit pull distance
+    const pullDistance = Math.min(deltaY, this.ptrState.maxDistance);
+    const pullProgress = pullDistance / this.ptrState.threshold;
+
+    this.updatePullIndicator(pullDistance, pullProgress >= 1);
+  }
+
+  handleTouchEnd(e) {
+    if (!this.ptrState.pulling) return;
+
+    const deltaY = this.ptrState.currentY - this.ptrState.startY;
+    const shouldRefresh = deltaY >= this.ptrState.threshold;
+
+    if (shouldRefresh && !this.ptrState.refreshing) {
+      this.triggerRefresh();
+    } else {
+      this.resetPullIndicator();
+    }
+
+    this.ptrState.pulling = false;
+    document.body.classList.remove('ptr-active');
+  }
+
+  // Mouse handlers for desktop testing
+  handleMouseDown(e) {
+    if (this.appContainer.scrollTop > 0) return;
+    this.ptrState.startY = e.clientY;
+    this.ptrState.pulling = true;
+    this.ptrState.mouseDown = true;
+    document.body.classList.add('ptr-active');
+  }
+
+  handleMouseMove(e) {
+    if (!this.ptrState.pulling || !this.ptrState.mouseDown || this.ptrState.refreshing) return;
+
+    this.ptrState.currentY = e.clientY;
+    const deltaY = this.ptrState.currentY - this.ptrState.startY;
+
+    if (deltaY <= 0) return;
+
+    e.preventDefault();
+    const pullDistance = Math.min(deltaY, this.ptrState.maxDistance);
+    const pullProgress = pullDistance / this.ptrState.threshold;
+
+    this.updatePullIndicator(pullDistance, pullProgress >= 1);
+  }
+
+  handleMouseUp(e) {
+    if (!this.ptrState.pulling) return;
+
+    const deltaY = this.ptrState.currentY - this.ptrState.startY;
+    const shouldRefresh = deltaY >= this.ptrState.threshold;
+
+    if (shouldRefresh && !this.ptrState.refreshing) {
+      this.triggerRefresh();
+    } else {
+      this.resetPullIndicator();
+    }
+
+    this.ptrState.pulling = false;
+    this.ptrState.mouseDown = false;
+    document.body.classList.remove('ptr-active');
+  }
+
+  updatePullIndicator(distance, canRefresh) {
+    // Show indicator
+    this.ptrIndicator.classList.add('visible');
+
+    // Update transform
+    const translateY = Math.min(distance, this.ptrState.threshold);
+    this.ptrIndicator.style.transform = `translateY(${translateY}px)`;
+
+    // Update icon and text
+    if (canRefresh) {
+      this.ptrIcon.classList.add('rotated');
+      this.ptrText.textContent = this.safeT('messages.releaseToRefresh', 'Відпустіть для оновлення');
+    } else {
+      this.ptrIcon.classList.remove('rotated');
+      this.ptrText.textContent = this.safeT('messages.pullToRefresh', 'Потягніть для оновлення');
+    }
+  }
+
+  async triggerRefresh() {
+    console.log('🔄 Triggering pull-to-refresh...');
+    
+    this.ptrState.refreshing = true;
+    this.ptrIndicator.classList.add('refreshing');
+    this.ptrIcon.classList.remove('rotated');
+    this.ptrIcon.classList.add('spinning');
+    
+    // Change icon to loading spinner
+    this.ptrIcon.innerHTML = `
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+      <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    `;
+    
+    this.ptrText.textContent = this.safeT('messages.refreshing', 'Оновлення...');
+
+    try {
+      // Perform refresh actions
+      await this.performRefresh();
+      
+      // Show success
+      this.ptrText.textContent = this.safeT('messages.refreshed', 'Оновлено!');
+      
+      // Wait a bit before hiding
+      setTimeout(() => {
+        this.resetPullIndicator();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Refresh error:', error);
+      this.ptrText.textContent = this.safeT('messages.refreshError', 'Помилка оновлення');
+      
+      setTimeout(() => {
+        this.resetPullIndicator();
+      }, 2000);
+    }
+  }
+
+  async performRefresh() {
+    console.log('📱 Performing data refresh...');
+    
+    // Check authentication first
+    if (!AppState.user) {
+      console.log('User not authenticated, skipping refresh');
+      return;
+    }
+
+    try {
+      // Refresh user profile and cards
+      const response = await this.apiCall('/auth/me');
+      
+      if (response && response.user) {
+        console.log('✅ Data refreshed via pull-to-refresh');
+        
+        // Update app state
+        AppState.user = response.user;
+        AppState.cards = response.cards || [];
+        
+        // Update UI
+        this.updateProfile();
+        this.renderCards();
+        
+        // Sync data to localStorage
+        this.saveLocalData();
+        
+        console.log('✅ Pull-to-refresh completed successfully');
+      }
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      throw error;
+    }
+  }
+
+  resetPullIndicator() {
+    this.ptrState.refreshing = false;
+    
+    // Reset classes
+    this.ptrIndicator.classList.remove('visible', 'refreshing');
+    this.ptrIcon.classList.remove('rotated', 'spinning');
+    
+    // Reset icon
+    this.ptrIcon.innerHTML = `<path d="M12 1v6m0 0l4-4m-4 4L8 3"/>`;
+    
+    // Reset text
+    this.ptrText.textContent = this.safeT('messages.pullToRefresh', 'Потягніть для оновлення');
+    
+    // Reset transform
+    this.ptrIndicator.style.transform = '';
+    
+    console.log('Pull-to-refresh reset');
+  }
+
   initializeTheme() {
     const savedTheme = localStorage.getItem('theme');
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     
     AppState.theme = savedTheme || systemTheme;
     this.applyTheme(AppState.theme);
+    
+    // Initialize lastActiveTime for app resume detection
+    this.lastActiveTime = Date.now();
     
     // Update theme selector
     const themeInput = document.querySelector(`input[name="theme"][value="${AppState.theme}"]`);
@@ -1791,6 +2048,60 @@ class LoyaltyCardsApp {
 
   handleOfflineStatus() {
     this.showToast('warning', this.safeT('messages.offlineMode', 'Офлайн режим'));
+  }
+
+  // Handle app resume/focus - validate token and refresh data
+  async handleAppResume() {
+    console.log('🔄 App resumed/focused');
+    
+    // Don't check if user is not authenticated
+    if (!AppState.user) {
+      console.log('User not authenticated, skipping resume check');
+      return;
+    }
+
+    // Check if we have a token
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (!token) {
+      console.log('No token found, redirecting to auth');
+      this.handleLogout();
+      return;
+    }
+
+    // Only check token validity if app was in background for more than 30 seconds
+    if (!this.lastActiveTime || Date.now() - this.lastActiveTime > 30000) {
+      try {
+        console.log('🔐 Validating token after app resume...');
+        const response = await this.apiCall('/auth/me');
+        
+        if (response && response.user) {
+          console.log('✅ Token still valid, refreshing data...');
+          
+          // Update app state with fresh data
+          AppState.user = response.user;
+          AppState.cards = response.cards || [];
+          
+          // Update language if changed
+          if (response.user.language && response.user.language !== window.i18n.getCurrentLanguage()) {
+            window.i18n.setLanguage(response.user.language);
+            window.i18n.updatePageTexts();
+          }
+          
+          // Refresh UI
+          this.updateProfile();
+          this.renderCards();
+          
+          console.log('✅ Data refreshed successfully');
+        }
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        // Token is invalid, logout user
+        this.handleLogout();
+        this.showToast('error', this.safeT('messages.sessionExpired', 'Сесія закінчилася, увійдіть знову'));
+      }
+    }
+    
+    this.lastActiveTime = Date.now();
   }
 
   escapeHtml(text) {

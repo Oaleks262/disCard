@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+Allow: /css/
+Allow: /js/
+Allow: /icons/
+Allow: /manifest.json
+Allow: /sw.js
+
+# Don't index app pages (private user content)
+Disallow: /app.html
+Disallow: /app/
+
+# Don't index API endpoints
+Disallow: /api/
+
+# Important files
+Sitemap: https://discard.app/sitemap.xml
+
+# Crawl delay for bots
+Crawl-delay: 1
+
+# Specific bot instructions
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot  
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+Allow: /icons/

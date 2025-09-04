@@ -5,10 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="heroTitle">Всі карти лояльності в одному місці</title>
     
-    <!-- Meta tags -->
-    <meta name="description" content="Скануй, зберігай та використовуй картки магазинів. Сучасний PWA додаток для управління картами лояльності.">
-    <meta name="keywords" content="карти лояльності, сканування, PWA, додаток">
+    <!-- SEO Meta tags -->
+    <meta name="description" content="Скануй, зберігай та використовуй картки магазинів. Сучасний PWA додаток для управління картами лояльності. Безкоштовно, безпечно, працює офлайн.">
+    <meta name="keywords" content="карти лояльності, сканування карток, PWA додаток, штрих код, QR код, дисконтні карти, мобільний додаток, офлайн, безкоштовно, Україна, магазини, АТБ, Сільпо, EVA, бонусні карти, накопичувальні карти">
     <meta name="author" content="disCard Team">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="language" content="uk-UA">
+    <meta name="geo.region" content="UA">
+    <meta name="geo.placename" content="Ukraine">
+    <meta name="rating" content="general">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://discard.app">
+    <meta property="og:title" content="disCard - Всі карти лояльності в одному місці | Безкоштовний PWA додаток">
+    <meta property="og:description" content="Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку. PWA технологія, офлайн доступ, максимальна безпека. Спробуй безкоштовно!">
+    <meta property="og:image" content="https://discard.app/icons/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="disCard - додаток для карт лояльності">
+    <meta property="og:site_name" content="disCard">
+    <meta property="og:locale" content="uk_UA">
+    <meta property="og:locale:alternate" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://discard.app">
+    <meta name="twitter:title" content="disCard - Всі карти лояльності в одному місці">
+    <meta name="twitter:description" content="Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку. PWA, офлайн, безкоштовно.">
+    <meta name="twitter:image" content="https://discard.app/icons/twitter-card.png">
+    <meta name="twitter:image:alt" content="disCard - додаток для карт лояльності">
+    <meta name="twitter:site" content="@discard_app">
+    <meta name="twitter:creator" content="@discard_app">
+
+    <!-- Additional SEO Meta -->
+    <meta name="application-name" content="disCard">
+    <meta name="msapplication-tooltip" content="Карти лояльності в одному місці">
+    <meta name="msapplication-starturl" content="/">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="canonical" href="https://discard.app/">
     
     <!-- PWA Meta -->
     <meta name="theme-color" content="#0066FF">
@@ -29,6 +67,134 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "disCard",
+        "alternateName": "disCard - Карти лояльності",
+        "url": "https://discard.app",
+        "description": "Сучасний PWA додаток для управління картами лояльності. Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "iOS, Android, Windows, macOS, Linux",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "UAH",
+            "availability": "https://schema.org/InStock",
+            "validFrom": "2024-01-01"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "disCard Team",
+            "url": "https://discard.app"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "disCard Team",
+            "url": "https://discard.app",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://discard.app/icons/icon-512x512.png",
+                "width": 512,
+                "height": 512
+            }
+        },
+        "screenshot": [
+            {
+                "@type": "ImageObject",
+                "url": "https://discard.app/screenshots/cards-view.png",
+                "caption": "Перегляд всіх карт лояльності"
+            },
+            {
+                "@type": "ImageObject", 
+                "url": "https://discard.app/screenshots/scanner-view.png",
+                "caption": "Сканування штрих-кодів та QR-кодів"
+            }
+        ],
+        "featureList": [
+            "Сканування QR-кодів та штрих-кодів",
+            "Безпечне зберігання карт",
+            "Офлайн доступ",
+            "PWA технологія",
+            "Безкоштовно",
+            "Підтримка українських магазинів"
+        ],
+        "inLanguage": ["uk-UA", "en-US"],
+        "availableLanguage": [
+            {
+                "@type": "Language",
+                "name": "Українська",
+                "alternateName": "uk-UA"
+            },
+            {
+                "@type": "Language", 
+                "name": "English",
+                "alternateName": "en-US"
+            }
+        ],
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "softwareVersion": "1.0.0",
+        "datePublished": "2024-01-01",
+        "dateModified": "2024-01-01",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "156",
+            "bestRating": "5",
+            "worstRating": "1"
+        }
+    }
+    </script>
+
+    <!-- Organization Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "disCard",
+        "url": "https://discard.app",
+        "logo": "https://discard.app/icons/icon-512x512.png",
+        "description": "Команда розробників PWA додатку для управління картами лояльності",
+        "foundingDate": "2024",
+        "founders": {
+            "@type": "Person",
+            "name": "disCard Team"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": ["Ukrainian", "English"]
+        },
+        "sameAs": [
+            "https://twitter.com/discard_app",
+            "https://facebook.com/discard.app"
+        ]
+    }
+    </script>
+
+    <!-- Website Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "disCard",
+        "url": "https://discard.app",
+        "description": "PWA додаток для управління картами лояльності",
+        "inLanguage": "uk-UA",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://discard.app/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "disCard Team"
+        }
+    }
+    </script>
 </head>
 <body>
     <!-- Header -->

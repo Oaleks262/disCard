@@ -649,10 +649,19 @@ class LoyaltyCardsApp {
       
       if (response && response.user) {
         console.log('✅ Data refreshed via pull-to-refresh');
+        console.log('Response cards:', response.cards);
+        console.log('Current AppState cards:', AppState.cards.length);
         
-        // Update app state
+        // Update app state - careful with cards handling
         AppState.user = response.user;
-        AppState.cards = response.cards || [];
+        
+        // Only update cards if we got valid data
+        if (response.cards && Array.isArray(response.cards)) {
+          AppState.cards = response.cards;
+          console.log('Updated cards from response:', AppState.cards.length);
+        } else {
+          console.log('No cards in response, keeping existing:', AppState.cards.length);
+        }
         
         // Update UI
         this.updateProfile();
@@ -662,6 +671,8 @@ class LoyaltyCardsApp {
         this.saveLocalData();
         
         console.log('✅ Pull-to-refresh completed successfully');
+      } else {
+        console.warn('Invalid response from /auth/me:', response);
       }
     } catch (error) {
       console.error('Refresh failed:', error);
@@ -735,8 +746,22 @@ class LoyaltyCardsApp {
       const response = await this.apiCall('/auth/me');
       
       if (response.user) {
+        console.log('✅ Auth check successful');
+        console.log('Auth response cards:', response.cards);
+        
         AppState.user = response.user;
-        AppState.cards = response.cards || [];
+        
+        // Handle cards carefully
+        if (response.cards && Array.isArray(response.cards)) {
+          AppState.cards = response.cards;
+          console.log('Updated cards from auth:', AppState.cards.length);
+        } else {
+          // Keep existing cards if response doesn't have them
+          console.log('No cards in auth response, keeping existing:', AppState.cards.length);
+          if (!AppState.cards) {
+            AppState.cards = [];
+          }
+        }
         
         // Save data to localStorage immediately
         this.saveLocalData();
@@ -1992,17 +2017,21 @@ class LoyaltyCardsApp {
 
   saveLocalData() {
     console.log('💾 Saving data to localStorage...');
+    console.log('Cards to save:', AppState.cards?.length || 0);
+    console.log('User to save:', AppState.user?.email || 'none');
     
     try {
       if (AppState.cards) {
         localStorage.setItem('cards', JSON.stringify(AppState.cards));
+        console.log('✅ Cards saved to localStorage');
       }
       
       if (AppState.user) {
         localStorage.setItem('user', JSON.stringify(AppState.user));
+        console.log('✅ User saved to localStorage');
       }
     } catch (error) {
-      console.error('Error saving local data:', error);
+      console.error('❌ Error saving local data:', error);
     }
   }
 
@@ -2122,10 +2151,19 @@ class LoyaltyCardsApp {
         
         if (response && response.user) {
           console.log('✅ Token still valid, refreshing data...');
+          console.log('Resume response cards:', response.cards);
+          console.log('Current AppState cards:', AppState.cards.length);
           
           // Update app state with fresh data
           AppState.user = response.user;
-          AppState.cards = response.cards || [];
+          
+          // Only update cards if we got valid data
+          if (response.cards && Array.isArray(response.cards)) {
+            AppState.cards = response.cards;
+            console.log('Updated cards from resume:', AppState.cards.length);
+          } else {
+            console.log('No cards in resume response, keeping existing:', AppState.cards.length);
+          }
           
           // Save data immediately
           this.saveLocalData();

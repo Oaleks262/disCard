@@ -371,7 +371,7 @@ async function cacheCardOffline(cardData) {
       const addRequest = store.add({
         card: cardData,
         timestamp: Date.now(),
-        token: localStorage.getItem('token')
+        token: localStorage.getItem('authToken')
       });
       
       addRequest.onsuccess = () => resolve();

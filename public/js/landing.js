@@ -97,7 +97,7 @@ class LandingPage {
 
   navigateToApp() {
     // Check if user is already logged in
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     
     if (token) {
       // Redirect directly to app

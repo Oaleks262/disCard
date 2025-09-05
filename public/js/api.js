@@ -48,9 +48,13 @@ class APIClient {
                     console.log('Token expired or invalid, clearing authentication');
                     this.setToken(null);
                     localStorage.removeItem('authToken');
-                    localStorage.removeItem('token');
-                    window.location.reload(); // Force reload to show auth screen
-                    return;
+                    
+                    // Instead of force reload, trigger auth screen through app
+                    if (window.app && typeof window.app.showAuthScreen === 'function') {
+                        window.app.showAuthScreen();
+                    }
+                    
+                    throw new Error('Unauthorized - token expired');
                 }
                 
                 throw new Error(errorData.error || `HTTP ${response.status}`);
@@ -164,9 +168,6 @@ class APIClient {
             
             // Get server data
             const serverCards = await this.getCards();
-            
-            // Get local data
-            const localCards = JSON.parse(localStorage.getItem('cards') || '[]');
             
             // Simple sync strategy: server data wins for now
             // In a more complex app, you'd compare timestamps and merge changes

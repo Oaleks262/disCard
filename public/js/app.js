@@ -655,12 +655,13 @@ class LoyaltyCardsApp {
         // Update app state - careful with cards handling
         AppState.user = response.user;
         
-        // Only update cards if we got valid data
+        // Always update cards from server response
         if (response.cards && Array.isArray(response.cards)) {
           AppState.cards = response.cards;
           console.log('Updated cards from response:', AppState.cards.length);
         } else {
-          console.log('No cards in response, keeping existing:', AppState.cards.length);
+          console.log('No cards in response, initializing empty array');
+          AppState.cards = [];
         }
         
         // Update UI
@@ -728,10 +729,11 @@ class LoyaltyCardsApp {
     
     if (token) {
       window.api.setToken(token);
-      // Migrate old token key to new one
-      if (localStorage.getItem('token')) {
+      // Migrate old token key to new one if needed
+      if (localStorage.getItem('token') && !localStorage.getItem('authToken')) {
         localStorage.setItem('authToken', token);
         localStorage.removeItem('token');
+        console.log('Migrated token from old key to authToken');
       }
     }
     
@@ -742,32 +744,40 @@ class LoyaltyCardsApp {
       return;
     }
 
+    // OFFLINE-FIRST APPROACH: Load cached data immediately for faster startup
+    console.log('📂 Loading cached data for offline-first approach...');
+    this.loadLocalData();
+    
+    // If we have cached user data, show app screen immediately
+    if (AppState.user && AppState.user.email) {
+      console.log('✅ Found cached user data, showing app screen');
+      this.showAppScreen();
+      this.updateProfile();
+      this.renderCards();
+    }
+
+    // Try to validate token and sync data in background
     try {
+      console.log('🔄 Validating token with server...');
       const response = await this.apiCall('/auth/me');
       
       if (response.user) {
-        console.log('✅ Auth check successful');
+        console.log('✅ Server validation successful, updating with fresh data');
         console.log('Auth response cards:', response.cards);
         
+        // Update with fresh server data
         AppState.user = response.user;
         
-        // Handle cards carefully
+        // Handle cards - always use server data if available
         if (response.cards && Array.isArray(response.cards)) {
           AppState.cards = response.cards;
-          console.log('Updated cards from auth:', AppState.cards.length);
+          console.log('Updated cards from server:', AppState.cards.length);
         } else {
-          // Keep existing cards if response doesn't have them
-          console.log('No cards in auth response, keeping existing:', AppState.cards.length);
-          if (!AppState.cards) {
-            AppState.cards = [];
-          }
+          console.log('No cards in server response, keeping cached cards:', AppState.cards.length);
         }
         
-        // Save data to localStorage immediately
+        // Save fresh data to localStorage
         this.saveLocalData();
-        
-        // Sync data between server and localStorage
-        await this.syncData();
         
         // Update language from user profile
         if (response.user.language) {
@@ -776,18 +786,50 @@ class LoyaltyCardsApp {
           window.i18n.updatePageTexts();
         }
         
-        this.showAppScreen();
+        // Update UI with fresh data
         this.updateProfile();
         this.renderCards();
+        
+        // Show online indicator if needed
+        if (AppState.isOnline) {
+          console.log('📶 App is online with fresh data');
+        }
       } else {
         throw new Error('Invalid response');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('token');
-      localStorage.removeItem('authToken');
-      window.api.setToken(null);
-      this.showAuthScreen();
+      console.error('Server validation failed:', error);
+      
+      // Only clear auth on explicit 401 Unauthorized, not on network errors
+      if (error.message && (error.message.includes('Unauthorized') || error.message.includes('401'))) {
+        console.log('🚫 Token is invalid, clearing authentication');
+        localStorage.removeItem('authToken');
+        window.api.setToken(null);
+        AppState.user = null;
+        AppState.cards = [];
+        this.showAuthScreen();
+      } else {
+        // Network error - keep cached data and show offline mode
+        console.log('📡 Network error, using cached data:', error.message);
+        if (!AppState.user) {
+          // If no cached user either, show auth
+          console.log('❌ No cached user data available, showing auth screen');
+          this.showAuthScreen();
+        } else {
+          console.log('✅ Using cached data in offline mode');
+          // Make sure app screen is shown with cached data
+          const appContainer = document.getElementById('app-container');
+          if (appContainer && !appContainer.classList.contains('hidden')) {
+            // App screen already shown, just update data
+            this.updateProfile();
+            this.renderCards();
+          } else {
+            this.showAppScreen();
+            this.updateProfile();
+            this.renderCards();
+          }
+        }
+      }
     }
   }
 
@@ -979,12 +1021,30 @@ class LoyaltyCardsApp {
       
       if (response && response.cards) {
         AppState.cards = response.cards;
+        this.saveLocalData(); // Save fresh data
         this.renderCards();
-        console.log('Loaded', AppState.cards.length, 'cards');
+        console.log('Loaded', AppState.cards.length, 'cards from server');
+      } else {
+        console.warn('No cards found in server response, keeping cached cards');
+        // Don't overwrite cached cards, just render what we have
+        this.renderCards();
       }
     } catch (error) {
       console.error('Load cards error:', error);
-      // Don't show error toast for card loading, just log it
+      
+      // Only clear cards on authentication errors, not network errors
+      if (error.message && (error.message.includes('Unauthorized') || error.message.includes('401'))) {
+        console.log('Authentication error, clearing cards');
+        AppState.cards = [];
+        this.renderCards();
+      } else {
+        console.log('Network error, using cached cards:', AppState.cards.length);
+        // Load from localStorage if AppState.cards is empty
+        if (!AppState.cards || AppState.cards.length === 0) {
+          this.loadLocalData();
+        }
+        this.renderCards();
+      }
     }
   }
 
@@ -998,7 +1058,7 @@ class LoyaltyCardsApp {
     console.log('Default prevented');
     
     // Check if user is authenticated
-    if (!AppState.user || !localStorage.getItem('token')) {
+    if (!AppState.user || !localStorage.getItem('authToken')) {
       console.error('User not authenticated');
       this.showToast('error', 'Необхідно авторизуватися');
       this.showAuthScreen();
@@ -1181,7 +1241,8 @@ class LoyaltyCardsApp {
     });
 
     // Load data if needed
-    if (tabName === 'cards' && AppState.cards.length === 0 && AppState.user) {
+    if (tabName === 'cards' && AppState.user) {
+      // Always try to refresh cards when switching to cards tab
       this.loadUserCards();
     }
   }
@@ -2117,12 +2178,21 @@ class LoyaltyCardsApp {
   }
 
   handleOnlineStatus() {
+    console.log('📶 Connection restored');
+    AppState.isOnline = true;
     this.showToast('success', this.safeT('messages.connectionRestored', 'З\'єднання відновлено'));
-    // Sync any pending offline actions
+    
+    // Try to sync data when coming back online
+    if (AppState.user) {
+      console.log('🔄 Syncing data after coming online...');
+      this.loadUserCards(); // This will refresh cards from server
+    }
   }
 
   handleOfflineStatus() {
-    this.showToast('warning', this.safeT('messages.offlineMode', 'Офлайн режим'));
+    console.log('📡 Connection lost, entering offline mode');
+    AppState.isOnline = false;
+    this.showToast('warning', this.safeT('messages.offlineMode', 'Офлайн режим - використовуються збережені дані'));
   }
 
   // Handle app resume/focus - validate token and refresh data
@@ -2136,7 +2206,7 @@ class LoyaltyCardsApp {
     }
 
     // Check if we have a token
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     if (!token) {
       console.log('No token found, redirecting to auth');
       this.handleLogout();
@@ -2157,12 +2227,13 @@ class LoyaltyCardsApp {
           // Update app state with fresh data
           AppState.user = response.user;
           
-          // Only update cards if we got valid data
+          // Always update cards from server response
           if (response.cards && Array.isArray(response.cards)) {
             AppState.cards = response.cards;
             console.log('Updated cards from resume:', AppState.cards.length);
           } else {
-            console.log('No cards in resume response, keeping existing:', AppState.cards.length);
+            console.log('No cards in resume response, initializing empty array');
+            AppState.cards = [];
           }
           
           // Save data immediately

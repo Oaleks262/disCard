@@ -1840,7 +1840,7 @@ input:focus-visible,
 /* Pull-to-refresh styles */
 .pull-to-refresh-container {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   height: 100vh;
   -webkit-overflow-scrolling: touch;
 }
@@ -1910,7 +1910,10 @@ input:focus-visible,
 /* Disable native pull-to-refresh when custom is active */
 body.ptr-active {
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: auto;
+}
+
+.app-container.ptr-active {
+  overflow: hidden;
 }
 
 /* Main content wrapper for pull-to-refresh */

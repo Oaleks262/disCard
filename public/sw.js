@@ -60,6 +60,18 @@ self.addEventListener('activate', event => {
       })
       .then(() => {
         console.log('Service Worker activated successfully');
+        
+        // Notify all clients about update
+        return self.clients.matchAll();
+      })
+      .then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'SW_UPDATED',
+            message: 'Service Worker has been updated'
+          });
+        });
+        
         return self.clients.claim();
       })
   );

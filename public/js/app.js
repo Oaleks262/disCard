@@ -389,11 +389,23 @@ class LoyaltyCardsApp {
         const registration = await navigator.serviceWorker.register('/sw.js');
         console.log('Service Worker registered:', registration);
         
+        // Listen for Service Worker messages
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'SW_UPDATED') {
+            console.log('Service Worker updated, preserving user data');
+            // Save current data before any potential reload
+            this.saveLocalData();
+          }
+        });
+        
         // Listen for updates
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('New Service Worker installed, saving data');
+              // Save data before showing update notification
+              this.saveLocalData();
               this.showUpdateNotification();
             }
           });
@@ -451,38 +463,61 @@ class LoyaltyCardsApp {
   }
 
   handleTouchStart(e) {
-    // Only handle if at top of scroll
-    if (this.appContainer.scrollTop > 0) return;
+    // Only handle if at top of scroll AND user is not authenticated
+    if (this.appContainer.scrollTop > 0 || !AppState.user) return;
     
     this.ptrState.startY = e.touches[0].clientY;
-    this.ptrState.pulling = true;
-    document.body.classList.add('ptr-active');
+    this.ptrState.pulling = false; // Don't activate yet, wait for move
+    this.ptrState.hasMoved = false;
   }
 
   handleTouchMove(e) {
-    if (!this.ptrState.pulling || this.ptrState.refreshing) return;
+    if (this.ptrState.refreshing) return;
+    
+    // Check if we should start pull-to-refresh
+    if (this.ptrState.startY && !this.ptrState.hasMoved) {
+      this.ptrState.currentY = e.touches[0].clientY;
+      const deltaY = this.ptrState.currentY - this.ptrState.startY;
+      
+      // Only activate if user is pulling down significantly (>10px) and still at top
+      if (deltaY > 10 && this.appContainer.scrollTop === 0) {
+        this.ptrState.pulling = true;
+        this.ptrState.hasMoved = true;
+        this.appContainer.classList.add('ptr-active');
+        document.body.classList.add('ptr-active');
+      } else if (deltaY <= 0) {
+        // Reset if user starts scrolling up
+        this.resetPtrState();
+        return;
+      }
+    }
+
+    if (!this.ptrState.pulling) return;
 
     this.ptrState.currentY = e.touches[0].clientY;
     const deltaY = this.ptrState.currentY - this.ptrState.startY;
 
     // Only handle downward pulls
-    if (deltaY <= 0) return;
+    if (deltaY <= 10) {
+      this.resetPtrState();
+      return;
+    }
 
-    // Prevent default scrolling when pulling
+    // Prevent default scrolling when actively pulling
     e.preventDefault();
 
     // Limit pull distance
-    const pullDistance = Math.min(deltaY, this.ptrState.maxDistance);
+    const pullDistance = Math.min(deltaY - 10, this.ptrState.maxDistance);
     const pullProgress = pullDistance / this.ptrState.threshold;
 
     this.updatePullIndicator(pullDistance, pullProgress >= 1);
   }
 
   handleTouchEnd(e) {
-    if (!this.ptrState.pulling) return;
+    if (!this.ptrState.pulling && !this.ptrState.startY) return;
 
     const deltaY = this.ptrState.currentY - this.ptrState.startY;
-    const shouldRefresh = deltaY >= this.ptrState.threshold;
+    const shouldRefresh = deltaY >= (this.ptrState.threshold + 10);
 
     if (shouldRefresh && !this.ptrState.refreshing) {
       this.triggerRefresh();
@@ -490,7 +525,15 @@ class LoyaltyCardsApp {
       this.resetPullIndicator();
     }
 
+    this.resetPtrState();
+  }
+
+  resetPtrState() {
     this.ptrState.pulling = false;
+    this.ptrState.startY = 0;
+    this.ptrState.currentY = 0;
+    this.ptrState.hasMoved = false;
+    this.appContainer.classList.remove('ptr-active');
     document.body.classList.remove('ptr-active');
   }
 
@@ -694,6 +737,9 @@ class LoyaltyCardsApp {
       if (response.user) {
         AppState.user = response.user;
         AppState.cards = response.cards || [];
+        
+        // Save data to localStorage immediately
+        this.saveLocalData();
         
         // Sync data between server and localStorage
         await this.syncData();
@@ -2080,6 +2126,9 @@ class LoyaltyCardsApp {
           // Update app state with fresh data
           AppState.user = response.user;
           AppState.cards = response.cards || [];
+          
+          // Save data immediately
+          this.saveLocalData();
           
           // Update language if changed
           if (response.user.language && response.user.language !== window.i18n.getCurrentLanguage()) {

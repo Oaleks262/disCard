@@ -18,20 +18,33 @@ const PRECACHE_URLS = [
   '/icons/favicon-32x32.png',
   '/icons/favicon-16x16.png',
   '/icons/apple-touch-icon.png',
-  // External libraries
+  // External libraries (only cache the most reliable ones)
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js',
   'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
-  'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
   'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js'
 ];
 
-// Install Service Worker
+// Install Service Worker with better error handling
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
+      .then(async cache => {
         console.log('Precaching app shell');
-        return cache.addAll(PRECACHE_URLS);
+        
+        // Cache each resource individually to handle failures gracefully
+        const cachePromises = PRECACHE_URLS.map(async url => {
+          try {
+            await cache.add(url);
+            console.log(`✅ Cached: ${url}`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to cache: ${url}`, error);
+            // Continue with other resources even if one fails
+          }
+        });
+        
+        await Promise.allSettled(cachePromises);
+        console.log('App shell precaching completed');
       })
       .then(() => {
         console.log('Service Worker installed successfully');

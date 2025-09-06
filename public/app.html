@@ -27,7 +27,7 @@
 
     <!-- PWA Meta -->
     <meta name="theme-color" content="#0066FF">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="disCard">
     <link rel="canonical" href="https://discard.app/app">
@@ -45,19 +45,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- QR Code and Barcode libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" 
+            onerror="this.onerror=null;this.src='https://unpkg.com/jsqr@1.4.0/dist/jsQR.js';console.warn('Trying alternative jsQR CDN')"></script>
     <!-- QuaggaJS for barcode scanning -->
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    <!-- QRCode library loaded dynamically -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"
+            onerror="this.onerror=null;this.src='https://unpkg.com/quagga@0.12.1/dist/quagga.min.js';console.warn('Trying alternative Quagga CDN')"></script>
+    <!-- JsBarcode library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"
+            onerror="this.onerror=null;this.src='https://unpkg.com/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';console.warn('Trying alternative JsBarcode CDN')"></script>
     
     <script>
         // Try loading QRCode from multiple CDNs
         function loadQRCodeLibrary() {
             const cdnUrls = [
-                'https://unpkg.com/qrcode@1.5.3/build/qrcode.js',
-                'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
-                'https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js'
+                'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js',
+                'https://unpkg.com/qrcode-generator@1.4.4/qrcode.js',
+                'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js'
             ];
             
             let currentIndex = 0;
@@ -72,15 +75,55 @@
                 return new Promise((resolve) => {
                     const script = document.createElement('script');
                     script.src = cdnUrls[currentIndex];
+                    
+                    let resolved = false;
+                    
+                    // Add timeout for slow CDN responses
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            console.warn(`⏰ CDN ${currentIndex + 1} timeout: ${cdnUrls[currentIndex]}`);
+                            currentIndex++;
+                            tryNextCDN().then(resolve);
+                        }
+                    }, 3000); // 3 second timeout for faster fallback
+                    
                     script.onload = () => {
-                        console.log(`✅ QRCode loaded from CDN ${currentIndex + 1}: ${cdnUrls[currentIndex]}`);
-                        resolve();
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            
+                            // Verify QRCode is actually available
+                            setTimeout(() => {
+                                if (typeof QRCode !== 'undefined' || 
+                                    typeof qrcode !== 'undefined') {
+                                    console.log(`✅ QRCode loaded and verified from CDN ${currentIndex + 1}: ${cdnUrls[currentIndex]}`);
+                                    
+                                    // Create unified interface if using qrcode-generator
+                                    if (typeof qrcode !== 'undefined' && !window.QRCode) {
+                                        createQRCodeAdapter();
+                                    }
+                                    
+                                    resolve();
+                                } else {
+                                    console.warn(`⚠️ QRCode loaded but not functional from CDN ${currentIndex + 1}, trying next...`);
+                                    currentIndex++;
+                                    tryNextCDN().then(resolve);
+                                }
+                            }, 100); // Small delay to let module initialize
+                        }
                     };
+                    
                     script.onerror = () => {
-                        console.warn(`❌ CDN ${currentIndex + 1} failed: ${cdnUrls[currentIndex]}`);
-                        currentIndex++;
-                        tryNextCDN().then(resolve);
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            console.warn(`❌ CDN ${currentIndex + 1} failed: ${cdnUrls[currentIndex]}`);
+                            currentIndex++;
+                            tryNextCDN().then(resolve);
+                        }
                     };
+                    
                     document.head.appendChild(script);
                 });
             }
@@ -88,11 +131,56 @@
             return tryNextCDN();
         }
 
+        // Create adapter for qrcode-generator to match QRCode.toCanvas API
+        function createQRCodeAdapter() {
+            console.log('Creating QRCode adapter for qrcode-generator');
+            
+            window.QRCode = {
+                toCanvas: (canvas, text, options = {}, callback) => {
+                    try {
+                        const qr = qrcode(0, 'M');
+                        qr.addData(text);
+                        qr.make();
+                        
+                        const size = options.width || canvas.width || 200;
+                        canvas.width = size;
+                        canvas.height = size;
+                        
+                        const ctx = canvas.getContext('2d');
+                        const moduleCount = qr.getModuleCount();
+                        const moduleSize = size / moduleCount;
+                        
+                        // Clear canvas
+                        ctx.fillStyle = options.color?.light || '#FFFFFF';
+                        ctx.fillRect(0, 0, size, size);
+                        
+                        // Draw QR code
+                        ctx.fillStyle = options.color?.dark || '#000000';
+                        
+                        for (let row = 0; row < moduleCount; row++) {
+                            for (let col = 0; col < moduleCount; col++) {
+                                if (qr.isDark(row, col)) {
+                                    ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+                                }
+                            }
+                        }
+                        
+                        console.log('✅ QR code generated using qrcode-generator adapter');
+                        if (callback) callback(null);
+                    } catch (error) {
+                        console.error('QRCode adapter error:', error);
+                        if (callback) callback(error);
+                    }
+                }
+            };
+        }
+
         // Simple QR Code library checker
         function waitForLibraries() {
             return new Promise(async (resolve) => {
                 // First check if QRCode is already loaded
-                if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+                if ((typeof QRCode !== 'undefined' && QRCode.toCanvas) || 
+                    (typeof qrcode !== 'undefined' && qrcode.QRCode)) {
                     console.log('✅ QRCode already available');
                     resolve();
                     return;
@@ -111,8 +199,16 @@
                     console.log(`Library check attempt ${attempts}:`);
                     console.log('- QRCode available:', typeof QRCode !== 'undefined');
                     console.log('- QRCode.toCanvas available:', typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function');
+                    console.log('- qrcode-generator available:', typeof qrcode !== 'undefined');
                     
-                    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+                    if ((typeof QRCode !== 'undefined' && QRCode.toCanvas) || 
+                        (typeof qrcode !== 'undefined' && qrcode.QRCode)) {
+                        
+                        // Create adapter if using qrcode-generator
+                        if (typeof qrcode !== 'undefined' && !window.QRCode) {
+                            createQRCodeAdapter();
+                        }
+                        
                         console.log('✅ QRCode library ready');
                         resolve();
                     } else if (attempts >= maxAttempts) {
@@ -313,15 +409,9 @@
             });
         });
     </script>
+    <meta name="google-adsense-account" content="ca-pub-8972937738510733">
 </head>
 <body>
-    <!-- Pull-to-refresh indicator -->
-    <div class="pull-to-refresh-indicator" id="ptr-indicator">
-        <svg class="ptr-icon" id="ptr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1v6m0 0l4-4m-4 4L8 3"/>
-        </svg>
-        <span class="ptr-text" id="ptr-text" data-i18n="pullToRefresh">Потягніть для оновлення</span>
-    </div>
 
     <!-- Loading Screen -->
     <div class="loading-screen" id="loading-screen">
@@ -758,9 +848,22 @@
     <div class="toast-container" id="toast-container"></div>
 
     <!-- Scripts -->
-    <script src="/js/i18n.js"></script>
-    <script src="/js/api.js"></script>
-    <script src="/js/app.js"></script>
+    <script src="/js/i18n.js?v=2"></script>
+    <script src="/js/api.js?v=1"></script>
+    
+    <!-- Utility Modules -->
+    <script src="/js/UIUtils.js?v=1"></script>
+    
+    <!-- Core Modules -->
+    <script src="/js/DataManager.js?v=1"></script>
+    <script src="/js/AuthManager.js?v=1"></script>
+    <script src="/js/CardManager.js?v=1"></script>
+    <script src="/js/ScannerManager.js?v=1"></script>
+    <script src="/js/ThemeManager.js?v=1"></script>
+    <script src="/js/PullToRefreshManager.js?v=1"></script>
+    
+    <!-- Main App -->
+    <script src="/js/app.js?v=9"></script>
     
     <!-- Service Worker Registration -->
     <script>

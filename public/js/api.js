@@ -57,6 +57,12 @@ class APIClient {
                     throw new Error('Unauthorized - token expired');
                 }
                 
+                // Handle 429 errors (Too Many Requests)
+                if (response.status === 429) {
+                    console.warn('⚠️ Too many requests, please wait before trying again');
+                    throw new Error('Too many requests - please wait a moment');
+                }
+                
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
 

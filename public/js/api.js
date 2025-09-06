@@ -3,6 +3,10 @@ class APIClient {
     constructor() {
         this.baseURL = window.location.origin + '/api';
         this.token = localStorage.getItem('authToken');
+        this.requestCache = new Map();
+        this.requestTimestamps = [];
+        this.rateLimitWindow = 15 * 60 * 1000; // 15 minutes
+        this.maxRequestsPerWindow = 80; // Leave buffer under server limit of 100
     }
 
     // Set authentication token
@@ -28,8 +32,72 @@ class APIClient {
         return headers;
     }
 
+    // Check if we're approaching rate limit
+    checkRateLimit() {
+        const now = Date.now();
+        // Clean old timestamps outside the window
+        this.requestTimestamps = this.requestTimestamps.filter(timestamp => 
+            now - timestamp < this.rateLimitWindow
+        );
+        
+        return this.requestTimestamps.length < this.maxRequestsPerWindow;
+    }
+
+    // Record a request timestamp
+    recordRequest() {
+        this.requestTimestamps.push(Date.now());
+    }
+
+    // Get cache key for request
+    getCacheKey(endpoint, options = {}) {
+        return `${options.method || 'GET'}_${endpoint}_${JSON.stringify(options.body || {})}`;
+    }
+
+    // Check cache for recent response
+    getFromCache(cacheKey, maxAge = 30000) { // 30 seconds default
+        const cached = this.requestCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < maxAge) {
+            console.log('Using cached response for:', cacheKey);
+            return cached.data;
+        }
+        return null;
+    }
+
+    // Store response in cache
+    setCache(cacheKey, data) {
+        this.requestCache.set(cacheKey, {
+            data: data,
+            timestamp: Date.now()
+        });
+        
+        // Clean old cache entries (keep only last 50)
+        if (this.requestCache.size > 50) {
+            const entries = Array.from(this.requestCache.entries());
+            entries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+            this.requestCache.clear();
+            entries.slice(0, 50).forEach(([key, value]) => {
+                this.requestCache.set(key, value);
+            });
+        }
+    }
+
     // Generic request handler
     async request(endpoint, options = {}) {
+        // Check rate limiting
+        if (!this.checkRateLimit()) {
+            console.warn('Rate limit approaching, request blocked');
+            throw new Error('Rate limit approached - please wait a moment');
+        }
+
+        // Check cache for GET requests
+        const cacheKey = this.getCacheKey(endpoint, options);
+        if (!options.method || options.method === 'GET') {
+            const cached = this.getFromCache(cacheKey, 30000); // 30 second cache for GET
+            if (cached) {
+                return cached;
+            }
+        }
+
         const url = `${this.baseURL}${endpoint}`;
         const config = {
             headers: this.getAuthHeaders(),
@@ -38,6 +106,7 @@ class APIClient {
 
         try {
             console.log(`API Request: ${options.method || 'GET'} ${url}`);
+            this.recordRequest(); // Record timestamp
             const response = await fetch(url, config);
             
             if (!response.ok) {
@@ -74,6 +143,11 @@ class APIClient {
             if (newToken) {
                 console.log('🔄 Token refreshed automatically');
                 this.setToken(newToken);
+            }
+            
+            // Cache GET responses
+            if (!options.method || options.method === 'GET') {
+                this.setCache(cacheKey, data);
             }
             
             return data;

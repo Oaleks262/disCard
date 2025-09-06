@@ -2,6 +2,10 @@
 class DataManager {
   constructor(app) {
     this.app = app;
+    this.lastSyncTime = 0;
+    this.syncCooldown = 10000; // 10 seconds minimum between syncs
+    this.lastRefreshTime = 0;
+    this.refreshCooldown = 5000; // 5 seconds minimum between refreshes
   }
 
   loadLocalData() {
@@ -49,7 +53,17 @@ class DataManager {
       return;
     }
 
+    // Check cooldown period
+    const now = Date.now();
+    if (now - this.lastSyncTime < this.syncCooldown) {
+      console.log('Sync blocked: cooldown period active');
+      return;
+    }
+
     try {
+      console.log('Starting data sync...');
+      this.lastSyncTime = now;
+      
       const response = await this.apiCall('/auth/me');
       
       if (response && response.user) {
@@ -130,17 +144,26 @@ class DataManager {
   updateProfile() {
     const userEmail = document.getElementById('user-email');
     const userName = document.getElementById('user-name');
+    const userId = document.getElementById('user-id');
+    const joinDate = document.getElementById('join-date');
     const cardsCount = document.getElementById('cards-count');
-    const languageSelect = document.getElementById('language-select');
     
     if (AppState.user) {
       if (userEmail) userEmail.textContent = AppState.user.email;
       if (userName) userName.textContent = AppState.user.name;
+      if (userId) userId.textContent = AppState.user._id || AppState.user.id;
+      if (joinDate && AppState.user.createdAt) {
+        const date = new Date(AppState.user.createdAt);
+        joinDate.textContent = date.toLocaleDateString('uk-UA');
+      }
       if (cardsCount) cardsCount.textContent = AppState.cards.length;
       
       // Update language selector
-      if (languageSelect && AppState.user.language) {
-        languageSelect.value = AppState.user.language;
+      if (AppState.user.language) {
+        const languageInput = document.querySelector(`input[name="language"][value="${AppState.user.language}"]`);
+        if (languageInput) {
+          languageInput.checked = true;
+        }
       }
     }
   }
@@ -170,7 +193,16 @@ class DataManager {
       throw new Error('User not authenticated');
     }
 
+    // Check cooldown period
+    const now = Date.now();
+    if (now - this.lastRefreshTime < this.refreshCooldown) {
+      console.log('Refresh blocked: cooldown period active');
+      throw new Error('Please wait before refreshing again');
+    }
+
     try {
+      console.log('Starting data refresh...');
+      this.lastRefreshTime = now;
       const response = await this.apiCall('/auth/me');
       
       if (response.user) {

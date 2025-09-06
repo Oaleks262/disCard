@@ -8,8 +8,23 @@ class ScannerManager {
   }
 
   async openScanner() {
+    // Check if browser supports camera
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       UIUtils.showToast('error', UIUtils.safeT('messages.cameraNotSupported', 'Камера не підтримується'));
+      return;
+    }
+
+    // Check if required scanning libraries are available
+    const selectedCodeType = document.querySelector('input[name="codeType"]:checked')?.value || 'qrcode';
+    const requiredLibrary = selectedCodeType === 'qrcode' ? 'jsQR' : 'Quagga';
+    
+    if (selectedCodeType === 'qrcode' && typeof jsQR === 'undefined') {
+      UIUtils.showToast('error', 'Бібліотека сканування QR-кодів не завантажена');
+      return;
+    }
+    
+    if (selectedCodeType === 'barcode' && typeof Quagga === 'undefined') {
+      UIUtils.showToast('error', 'Бібліотека сканування штрих-кодів не завантажена');
       return;
     }
 
@@ -18,7 +33,6 @@ class ScannerManager {
     const instructions = modal.querySelector('.scanner-instructions');
     
     // Update instructions based on selected code type
-    const selectedCodeType = document.querySelector('input[name="codeType"]:checked')?.value || 'qrcode';
     const instructionText = selectedCodeType === 'qrcode' ? 
       'Наведіть камеру на QR-код для сканування' : 
       'Наведіть камеру на штрих-код для сканування';
@@ -28,25 +42,54 @@ class ScannerManager {
     modal.classList.add('show');
 
     try {
+      // Detect mobile device for optimized settings
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: isMobile ? 640 : 1280 },
+          height: { ideal: isMobile ? 480 : 720 },
+          frameRate: { ideal: isMobile ? 15 : 30 }
         }
       });
 
       video.srcObject = stream;
       this.currentStream = stream;
       
+      // Wait for video to be ready
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+      });
+      
       // Start scanning
       this.startScanning(video);
       
     } catch (error) {
       console.error('Camera error:', error);
-      UIUtils.showToast('error', UIUtils.safeT('scanner.permissionDenied', 'Доступ до камери заборонено'));
-      this.closeScanner();
+      this.handleCameraError(error);
     }
+  }
+
+  handleCameraError(error) {
+    let errorMessage = 'Помилка доступу до камери';
+    
+    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      errorMessage = 'Доступ до камери заборонено. Дозвольте доступ в налаштуваннях браузера';
+    } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+      errorMessage = 'Камера не знайдена на пристрої';
+    } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+      errorMessage = 'Камера зайнята іншою програмою';
+    } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
+      errorMessage = 'Камера не підтримує необхідні параметри';
+    } else if (error.name === 'NotSupportedError') {
+      errorMessage = 'Браузер не підтримує доступ до камери';
+    } else if (error.name === 'SecurityError') {
+      errorMessage = 'Доступ до камери заблоковано з міркувань безпеки. Переконайтеся, що сайт використовує HTTPS';
+    }
+
+    UIUtils.showToast('error', errorMessage);
+    this.closeScanner();
   }
 
   closeScanner() {
@@ -70,6 +113,9 @@ class ScannerManager {
   startScanning(video) {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+    
+    // Detect mobile device for optimized scanning
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // Get currently selected code type
     const getSelectedCodeType = () => {
@@ -94,7 +140,7 @@ class ScannerManager {
           this.scanBarcode(canvas);
         }
       }
-    }, 200); // Reduced frequency for better performance
+    }, isMobile ? 300 : 200); // Slower scanning on mobile to save battery
   }
 
   // QR Code scanning method

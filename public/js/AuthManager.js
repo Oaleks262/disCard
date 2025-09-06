@@ -3,6 +3,8 @@ class AuthManager {
   constructor(app) {
     this.app = app;
     this.lastActiveTime = Date.now();
+    this.resumeDebounceTimeout = null;
+    this.resumeDebounceDelay = 2000; // 2 seconds debounce
   }
 
   async checkAuthentication() {
@@ -306,44 +308,51 @@ class AuthManager {
       return;
     }
 
-    // Only check token validity if app was in background for more than 30 seconds
-    if (!this.lastActiveTime || Date.now() - this.lastActiveTime > 30000) {
-      try {
-        const response = await this.app.apiCall('/auth/me');
-        
-        if (response && response.user) {
-          // Update app state with fresh data
-          AppState.user = response.user;
-          
-          // Always update cards from server response
-          if (response.cards && Array.isArray(response.cards)) {
-            AppState.cards = response.cards;
-          } else {
-            AppState.cards = [];
-          }
-          
-          // Save data immediately
-          this.app.saveLocalData();
-          
-          // Update language if changed
-          if (response.user.language && response.user.language !== window.i18n.getCurrentLanguage()) {
-            window.i18n.setLanguage(response.user.language);
-            window.i18n.updatePageTexts();
-          }
-          
-          // Refresh UI
-          this.app.updateProfile();
-          this.app.renderCards();
-        }
-      } catch (error) {
-        console.error('Token validation failed:', error);
-        // Token is invalid, logout user
-        this.handleLogout();
-        UIUtils.showToast('error', UIUtils.safeT('messages.sessionExpired', 'Сесія закінчилася, увійдіть знову'));
-      }
+    // Debounce rapid resume calls
+    if (this.resumeDebounceTimeout) {
+      clearTimeout(this.resumeDebounceTimeout);
     }
-    
-    this.lastActiveTime = Date.now();
+
+    this.resumeDebounceTimeout = setTimeout(async () => {
+      // Only check token validity if app was in background for more than 30 seconds
+      if (!this.lastActiveTime || Date.now() - this.lastActiveTime > 30000) {
+        try {
+          const response = await this.app.apiCall('/auth/me');
+          
+          if (response && response.user) {
+            // Update app state with fresh data
+            AppState.user = response.user;
+            
+            // Always update cards from server response
+            if (response.cards && Array.isArray(response.cards)) {
+              AppState.cards = response.cards;
+            } else {
+              AppState.cards = [];
+            }
+            
+            // Save data immediately
+            this.app.saveLocalData();
+            
+            // Update language if changed
+            if (response.user.language && response.user.language !== window.i18n.getCurrentLanguage()) {
+              window.i18n.setLanguage(response.user.language);
+              window.i18n.updatePageTexts();
+            }
+            
+            // Refresh UI
+            this.app.updateProfile();
+            this.app.renderCards();
+          }
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          // Token is invalid, logout user
+          this.handleLogout();
+          UIUtils.showToast('error', UIUtils.safeT('messages.sessionExpired', 'Сесія закінчилася, увійдіть знову'));
+        }
+      }
+      
+      this.lastActiveTime = Date.now();
+    }, this.resumeDebounceDelay);
   }
 
   // Setup authentication event listeners

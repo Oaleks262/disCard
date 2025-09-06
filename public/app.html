@@ -178,42 +178,72 @@
         // Simple QR Code library checker
         function waitForLibraries() {
             return new Promise(async (resolve) => {
-                // First check if QRCode is already loaded
-                if ((typeof QRCode !== 'undefined' && QRCode.toCanvas) || 
-                    (typeof qrcode !== 'undefined' && qrcode.QRCode)) {
-                    console.log('✅ QRCode already available');
+                // Check all required libraries
+                function checkAllLibraries() {
+                    const qrcodeReady = (typeof QRCode !== 'undefined' && QRCode.toCanvas) || 
+                                       (typeof qrcode !== 'undefined' && qrcode.QRCode);
+                    const jsqrReady = typeof jsQR !== 'undefined';
+                    const quaggaReady = typeof Quagga !== 'undefined';
+                    const jsbarcodeReady = typeof JsBarcode !== 'undefined';
+                    
+                    console.log('📊 Library status check:');
+                    console.log('- QRCode (generation):', qrcodeReady);
+                    console.log('- jsQR (QR scanning):', jsqrReady);
+                    console.log('- Quagga (barcode scanning):', quaggaReady);
+                    console.log('- JsBarcode (barcode generation):', jsbarcodeReady);
+                    
+                    return {
+                        qrcode: qrcodeReady,
+                        jsqr: jsqrReady,
+                        quagga: quaggaReady,
+                        jsbarcode: jsbarcodeReady,
+                        allReady: qrcodeReady && jsqrReady && quaggaReady && jsbarcodeReady
+                    };
+                }
+                
+                // Initial check
+                let status = checkAllLibraries();
+                if (status.allReady) {
+                    console.log('✅ All libraries already available');
                     resolve();
                     return;
                 }
                 
-                // Try loading it manually
-                console.log('📦 Loading QRCode library...');
-                await loadQRCodeLibrary();
+                // If QRCode not ready, try loading it manually
+                if (!status.qrcode) {
+                    console.log('📦 Loading QRCode library...');
+                    await loadQRCodeLibrary();
+                }
                 
-                // Wait a bit and check again
+                // Wait and check periodically
                 let attempts = 0;
-                const maxAttempts = 30;
+                const maxAttempts = 50;
                 
                 function check() {
                     attempts++;
-                    console.log(`Library check attempt ${attempts}:`);
-                    console.log('- QRCode available:', typeof QRCode !== 'undefined');
-                    console.log('- QRCode.toCanvas available:', typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function');
-                    console.log('- qrcode-generator available:', typeof qrcode !== 'undefined');
+                    status = checkAllLibraries();
                     
-                    if ((typeof QRCode !== 'undefined' && QRCode.toCanvas) || 
-                        (typeof qrcode !== 'undefined' && qrcode.QRCode)) {
-                        
+                    if (status.allReady) {
                         // Create adapter if using qrcode-generator
                         if (typeof qrcode !== 'undefined' && !window.QRCode) {
                             createQRCodeAdapter();
                         }
                         
-                        console.log('✅ QRCode library ready');
+                        console.log('✅ All libraries ready');
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        console.error('❌ QRCode library still not available after loading attempts');
-                        createQRCodeMock();
+                        console.error('❌ Some libraries still not available after loading attempts');
+                        console.error('Missing libraries:', {
+                            qrcode: !status.qrcode,
+                            jsqr: !status.jsqr,
+                            quagga: !status.quagga,
+                            jsbarcode: !status.jsbarcode
+                        });
+                        
+                        // Create fallbacks for missing libraries
+                        if (!status.qrcode) createQRCodeMock();
+                        if (!status.jsbarcode) createJsBarcodeMock();
+                        
                         resolve();
                     } else {
                         setTimeout(check, 100);

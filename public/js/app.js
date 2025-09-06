@@ -26,7 +26,7 @@ class LoyaltyCardsApp {
     this.cards = new CardManager(this);
     this.scanner = new ScannerManager(this);
     this.theme = new ThemeManager(this);
-    this.pullToRefresh = new PullToRefreshManager(this);
+    // this.pullToRefresh = new PullToRefreshManager(this);
     
     this.init();
   }
@@ -50,7 +50,7 @@ class LoyaltyCardsApp {
     
     this.setupServiceWorker();
     this.setupOfflineHandling();
-    this.pullToRefresh.setupPullToRefresh();
+    // this.pullToRefresh.setupPullToRefresh();
     this.theme.initializeTheme();
     
     // Initialize i18n if available
@@ -85,8 +85,11 @@ class LoyaltyCardsApp {
     this.theme.setupThemeEventListeners();
     this.data.setupDataEventListeners();
 
-    // Settings
-    document.getElementById('language-select')?.addEventListener('change', this.handleLanguageChange.bind(this));
+    // Settings - Language switching
+    const languageInputs = document.querySelectorAll('input[name="language"]');
+    languageInputs.forEach(input => {
+      input.addEventListener('change', this.handleLanguageChange.bind(this));
+    });
   }
 
   // Core app methods

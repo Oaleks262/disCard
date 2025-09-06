@@ -15,9 +15,7 @@ const PRECACHE_URLS = [
   '/js/i18n.js',
   '/manifest.json',
   // Icons
-  '/icons/favicon-32x32.png',
-  '/icons/favicon-16x16.png',
-  '/icons/apple-touch-icon.png',
+  '/logo.png',
   // External libraries (only cache the most reliable ones)
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js',
@@ -291,8 +289,8 @@ self.addEventListener('push', event => {
   
   const options = {
     body: 'У вас є нові оновлення!',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    icon: '/logo.png',
+    badge: '/logo.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -302,12 +300,12 @@ self.addEventListener('push', event => {
       {
         action: 'explore',
         title: 'Переглянути',
-        icon: '/icons/checkmark.png'
+        icon: '/logo.png'
       },
       {
         action: 'close',
         title: 'Закрити',
-        icon: '/icons/xmark.png'
+        icon: '/logo.png'
       }
     ]
   };

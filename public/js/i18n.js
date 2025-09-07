@@ -48,7 +48,7 @@ const translations = {
         },
         step2: {
           title: "Знайдіть меню браузера",
-          desc: "Натисніть на три крапки (⋮) у верхньому правому куті браузера"
+          desc: "Натисніть на три крапки (<img src='/icons/share-android.png' alt='меню' style='display:inline; width:16px; height:16px; vertical-align:middle;'>) у верхньому правому куті браузера"
         },
         step3: {
           title: "Виберіть \"Додати на головний екран\"",
@@ -70,11 +70,11 @@ const translations = {
         },
         step3: {
           title: "Натисніть кнопку \"Поділитися\"",
-          desc: "Знайдіть значок поділитися (□↗) внизу екрану Safari"
+          desc: "Знайдіть значок поділитися (<img src='/icons/share-apple.png' alt='поділитися' style='display:inline; width:16px; height:16px; vertical-align:middle;'>) внизу екрану Safari"
         },
         step4: {
-          title: "Виберіть \"На екран «Домой»\"",
-          desc: "Прокрутіть вниз і знайдіть опцію \"На экран «Домой»\" або \"Add to Home Screen\""
+          title: "Виберіть \"На головний екран\"",
+          desc: "Прокрутіть вниз і знайдіть опцію \"На головний екран\" або \"Add to Home Screen\""
         },
         step5: {
           title: "Додайте додаток",
@@ -82,7 +82,7 @@ const translations = {
         }
       },
       note: {
-        title: "Чому це працює без App Store?",
+        title: "Чому це працює без App Store/Play market?",
         desc: "disCard - це PWA (Progressive Web App), сучасна технологія, що дозволяє веб-додаткам працювати як нативні програми з офлайн доступом і push-сповіщеннями."
       }
     },
@@ -290,7 +290,7 @@ const translations = {
         },
         step2: {
           title: "Find browser menu",
-          desc: "Tap on three dots (⋮) in the top right corner of the browser"
+          desc: "Tap on three dots (<img src='/icons/share-android.png' alt='menu' style='display:inline; width:16px; height:16px; vertical-align:middle;'>) in the top right corner of the browser"
         },
         step3: {
           title: "Select \"Add to Home screen\"",
@@ -312,7 +312,7 @@ const translations = {
         },
         step3: {
           title: "Tap the \"Share\" button",
-          desc: "Find the share icon (□↗) at the bottom of Safari screen"
+          desc: "Find the share icon (<img src='/icons/share-apple.png' alt='share' style='display:inline; width:16px; height:16px; vertical-align:middle;'>) at the bottom of Safari screen"
         },
         step4: {
           title: "Select \"Add to Home Screen\"",
@@ -598,7 +598,12 @@ class I18n {
       if (element.tagName === 'INPUT' && element.type !== 'button') {
         element.placeholder = translation;
       } else {
-        element.textContent = translation;
+        // Check if translation contains HTML tags
+        if (translation.includes('<img') || translation.includes('<')) {
+          element.innerHTML = translation;
+        } else {
+          element.textContent = translation;
+        }
       }
     });
 

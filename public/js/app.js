@@ -120,6 +120,12 @@ class LoyaltyCardsApp {
       targetPanel.classList.add('active');
       AppState.currentTab = tabName;
       
+      // Reset scroll position to top when switching tabs
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        targetPanel.scrollTop = 0;
+      }, 0);
+      
       // Special handling for cards tab to ensure cards are rendered
       if (tabName === 'cards' && AppState.cards) {
         setTimeout(() => {

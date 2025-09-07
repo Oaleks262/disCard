@@ -289,8 +289,8 @@ self.addEventListener('push', event => {
   
   const options = {
     body: 'У вас є нові оновлення!',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/icons/logo.png',
+    badge: '/icons/logo.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),

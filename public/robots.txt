@@ -14,7 +14,7 @@ Disallow: /app/
 Disallow: /api/
 
 # Important files
-Sitemap: https://discard.app/sitemap.xml
+Sitemap: https://discard.com.ua/sitemap.xml
 
 # Crawl delay for bots
 Crawl-delay: 1

@@ -12,8 +12,8 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 2804;
 
-// Trust proxy (for nginx/reverse proxy)
-app.set('trust proxy', process.env.TRUST_PROXY === 'true' || false);
+// Trust proxy (for nginx/reverse proxy) - trust only first proxy
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -24,12 +24,19 @@ app.use(helmet({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip successful requests
+  skipSuccessfulRequests: true
 });
 
 const authLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false
 });
 
 app.use(limiter);

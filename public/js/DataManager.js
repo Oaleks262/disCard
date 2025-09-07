@@ -99,6 +99,12 @@ class DataManager {
   }
 
   async apiCall(endpoint, options = {}) {
+    // Check if API client is available
+    if (!window.api) {
+      console.error('❌ window.api is not available. API client not loaded.');
+      throw new Error('API client not loaded. Please refresh the page.');
+    }
+    
     // Initialize request count for debugging
     if (!window.apiRequestCount) {
       window.apiRequestCount = 0;
@@ -118,7 +124,7 @@ class DataManager {
       } else if (endpoint === '/auth/profile' && options.method === 'PUT') {
         return await window.api.updateProfile(JSON.parse(options.body));
       } else if (endpoint === '/cards' && options.method === 'POST') {
-        return await window.api.addCard(JSON.parse(options.body));
+        return await window.api.createCard(JSON.parse(options.body));
       } else if (endpoint.startsWith('/cards/') && options.method === 'DELETE') {
         const cardId = endpoint.split('/cards/')[1];
         return await window.api.deleteCard(cardId);

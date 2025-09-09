@@ -100,13 +100,27 @@ const userSchema = new mongoose.Schema({
     },
     code: {
       type: String,
-      required: true,
+      // Make code optional for encrypted cards
+      required: function() {
+        return !this.isEncrypted;
+      },
       trim: true
     },
     codeType: {
       type: String,
       required: true,
       enum: ['barcode', 'qrcode']
+    },
+    // New fields for encryption support
+    encryptedCode: {
+      type: String,
+      required: function() {
+        return this.isEncrypted;
+      }
+    },
+    isEncrypted: {
+      type: Boolean,
+      default: false
     },
     createdAt: {
       type: Date,
@@ -116,6 +130,11 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Note: Card encryption is handled on the client side.
+// The server stores cards exactly as received from the client - 
+// either encrypted (with encryptedCode field) or unencrypted (with code field).
+// This provides end-to-end encryption where only the client can decrypt the card codes.
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

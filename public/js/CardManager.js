@@ -92,16 +92,17 @@ class CardManager {
   }
 
   renderCards() {
-    const grid = document.getElementById('cards-grid');
-    const emptyState = document.getElementById('cards-empty');
-    
-    if (!grid) {
-      console.error('❌ cards-grid element not found!');
-      return;
-    }
-    
-    if (!emptyState) {
-      console.error('❌ cards-empty element not found!');
+    try {
+      const grid = document.getElementById('cards-grid');
+      const emptyState = document.getElementById('cards-empty');
+      
+      if (!grid) {
+        console.warn('cards-grid element not found - app screen may not be ready yet');
+        return;
+      }
+      
+      if (!emptyState) {
+        console.warn('cards-empty element not found - app screen may not be ready yet');
       return;
     }
     
@@ -130,6 +131,9 @@ class CardManager {
     const cardsCount = document.getElementById('cards-count');
     if (cardsCount) {
       cardsCount.textContent = AppState.cards.length;
+    }
+    } catch (error) {
+      console.warn('Error rendering cards:', error);
     }
   }
 

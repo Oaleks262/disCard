@@ -6,9 +6,62 @@ class DataManager {
     this.syncCooldown = 10000; // 10 seconds minimum between syncs
     this.lastRefreshTime = 0;
     this.refreshCooldown = 5000; // 5 seconds minimum between refreshes
+    this.cryptoManager = null;
+    this.encryptionKey = null;
+    this.encryptionEnabled = false;
+    this.migrationManager = null;
   }
 
-  loadLocalData() {
+  // Initialize encryption for the current user
+  async initializeEncryption(userEmail, userPassword) {
+    try {
+      if (!CryptoManager.isSupported()) {
+        console.warn('Web Crypto API not supported, encryption disabled');
+        this.encryptionEnabled = false;
+        return false;
+      }
+
+      this.cryptoManager = new CryptoManager();
+      this.encryptionKey = await this.cryptoManager.generateKey(userEmail, userPassword);
+      this.encryptionEnabled = true;
+      
+      // Initialize migration manager
+      this.migrationManager = new MigrationManager(this);
+      
+      console.log('Encryption initialized successfully');
+      
+      // Check and perform migration if needed
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Starting auto-migration check...');
+          await this.migrationManager.checkAndMigrate({
+            showProgress: true,
+            autoRun: true,
+            requireConfirmation: false
+          });
+          console.log('✅ Auto-migration check completed');
+        } catch (error) {
+          console.error('❌ Auto-migration failed:', error);
+        }
+      }, 1000);
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to initialize encryption:', error);
+      this.encryptionEnabled = false;
+      return false;
+    }
+  }
+
+  // Disable encryption (for logout)
+  disableEncryption() {
+    this.cryptoManager = null;
+    this.encryptionKey = null;
+    this.encryptionEnabled = false;
+    this.migrationManager = null;
+  }
+
+  async loadLocalData() {
     try {
       const userData = localStorage.getItem('user');
       const cardsData = localStorage.getItem('cards');
@@ -20,7 +73,22 @@ class DataManager {
       
       if (cardsData) {
         const cards = JSON.parse(cardsData);
-        AppState.cards = Array.isArray(cards) ? cards : [];
+        if (Array.isArray(cards)) {
+          // Check if we need to decrypt cards
+          if (this.encryptionEnabled && this.encryptionKey) {
+            try {
+              AppState.cards = await this.cryptoManager.decryptCards(cards, this.encryptionKey);
+              console.log('Cards decrypted successfully');
+            } catch (error) {
+              console.warn('Failed to decrypt cards, using as-is:', error);
+              AppState.cards = cards;
+            }
+          } else {
+            AppState.cards = cards;
+          }
+        } else {
+          AppState.cards = [];
+        }
       }
       
     } catch (error) {
@@ -33,14 +101,27 @@ class DataManager {
     }
   }
 
-  saveLocalData() {
+  async saveLocalData() {
     try {
       if (AppState.user) {
         localStorage.setItem('user', JSON.stringify(AppState.user));
       }
       
       if (AppState.cards && Array.isArray(AppState.cards)) {
-        localStorage.setItem('cards', JSON.stringify(AppState.cards));
+        let cardsToSave = AppState.cards;
+        
+        // Encrypt cards before saving if encryption is enabled
+        if (this.encryptionEnabled && this.encryptionKey && AppState.cards.length > 0) {
+          try {
+            cardsToSave = await this.cryptoManager.encryptCards(AppState.cards, this.encryptionKey);
+            console.log('Cards encrypted for local storage');
+          } catch (error) {
+            console.warn('Failed to encrypt cards, saving unencrypted:', error);
+            cardsToSave = AppState.cards;
+          }
+        }
+        
+        localStorage.setItem('cards', JSON.stringify(cardsToSave));
       }
       
     } catch (error) {
@@ -68,9 +149,21 @@ class DataManager {
       
       if (response && response.user) {
         AppState.user = response.user;
-        AppState.cards = response.cards || [];
         
-        this.saveLocalData();
+        // Handle cards with potential decryption
+        let serverCards = response.cards || [];
+        if (this.encryptionEnabled && this.encryptionKey && serverCards.length > 0) {
+          try {
+            AppState.cards = await this.cryptoManager.decryptCards(serverCards, this.encryptionKey);
+          } catch (error) {
+            console.warn('Failed to decrypt server cards:', error);
+            AppState.cards = serverCards;
+          }
+        } else {
+          AppState.cards = serverCards;
+        }
+        
+        await this.saveLocalData();
         this.app.cards.renderCards();
         this.updateProfile();
         
@@ -124,7 +217,20 @@ class DataManager {
       } else if (endpoint === '/auth/profile' && options.method === 'PUT') {
         return await window.api.updateProfile(JSON.parse(options.body));
       } else if (endpoint === '/cards' && options.method === 'POST') {
-        return await window.api.createCard(JSON.parse(options.body));
+        const cardData = JSON.parse(options.body);
+        
+        // Encrypt card data before sending to server if encryption is enabled
+        if (this.encryptionEnabled && this.encryptionKey) {
+          try {
+            const encryptedCards = await this.cryptoManager.encryptCards([cardData], this.encryptionKey);
+            return await window.api.createCard(encryptedCards[0]);
+          } catch (error) {
+            console.warn('Failed to encrypt card for server, sending unencrypted:', error);
+            return await window.api.createCard(cardData);
+          }
+        }
+        
+        return await window.api.createCard(cardData);
       } else if (endpoint.startsWith('/cards/') && options.method === 'DELETE') {
         const cardId = endpoint.split('/cards/')[1];
         return await window.api.deleteCard(cardId);
@@ -135,6 +241,7 @@ class DataManager {
       // Handle common error scenarios
       if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         // Token expired or invalid
+        console.log('🚨 DataManager.apiCall calling showAuthScreen due to 401/Unauthorized:', error.message);
         localStorage.removeItem('authToken');
         window.api.setToken(null);
         AppState.user = null;
@@ -148,16 +255,17 @@ class DataManager {
   }
 
   updateProfile() {
-    const userEmail = document.getElementById('user-email');
-    const userName = document.getElementById('user-name');
-    const userId = document.getElementById('user-id');
-    const joinDate = document.getElementById('join-date');
-    const cardsCount = document.getElementById('cards-count');
-    
-    if (AppState.user) {
-      if (userEmail) userEmail.textContent = AppState.user.email;
-      if (userName) userName.textContent = AppState.user.name;
-      if (userId) userId.textContent = AppState.user._id || AppState.user.id;
+    try {
+      const userEmail = document.getElementById('user-email');
+      const userName = document.getElementById('user-name');
+      const userId = document.getElementById('user-id');
+      const joinDate = document.getElementById('join-date');
+      const cardsCount = document.getElementById('cards-count');
+      
+      if (AppState.user) {
+        if (userEmail) userEmail.textContent = AppState.user.email;
+        if (userName) userName.textContent = AppState.user.name;
+        if (userId) userId.textContent = AppState.user._id || AppState.user.id;
       if (joinDate && AppState.user.createdAt) {
         const date = new Date(AppState.user.createdAt);
         joinDate.textContent = date.toLocaleDateString('uk-UA');
@@ -171,6 +279,9 @@ class DataManager {
           languageInput.checked = true;
         }
       }
+    }
+    } catch (error) {
+      console.warn('Error updating profile UI:', error);
     }
   }
 
@@ -215,7 +326,7 @@ class DataManager {
         // Save user data
         AppState.user = response.user;
         
-        // Save cards data
+        // Save cards data with decryption
         let serverCards = [];
         if (response.user.cards && Array.isArray(response.user.cards) && response.user.cards.length > 0) {
           serverCards = response.user.cards;
@@ -225,10 +336,20 @@ class DataManager {
           serverCards = AppState.cards || [];
         }
         
-        AppState.cards = serverCards;
+        // Decrypt cards if encryption is enabled
+        if (this.encryptionEnabled && this.encryptionKey && serverCards.length > 0) {
+          try {
+            AppState.cards = await this.cryptoManager.decryptCards(serverCards, this.encryptionKey);
+          } catch (error) {
+            console.warn('Failed to decrypt server cards during refresh:', error);
+            AppState.cards = serverCards;
+          }
+        } else {
+          AppState.cards = serverCards;
+        }
         
         // Sync data to localStorage
-        this.saveLocalData();
+        await this.saveLocalData();
         
       } else {
         console.warn('Invalid response from /auth/me:', response);
@@ -237,6 +358,7 @@ class DataManager {
       console.error('Refresh failed:', error);
       
       if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        console.log('🚨 DataManager calling logout due to 401/Unauthorized:', error.message);
         this.app.auth.handleLogout();
         throw new Error('Session expired');
       }

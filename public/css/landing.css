@@ -281,7 +281,19 @@ body {
   line-height: 1.2;
   color: var(--text-primary);
   margin-bottom: var(--spacing-lg);
-  min-height: 4.2rem; /* Prevent layout shift during typing animation */
+  opacity: 0;
+  animation: fadeInUp 1s ease 0.5s forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-subtitle {
@@ -289,11 +301,15 @@ body {
   color: var(--text-secondary);
   margin-bottom: var(--spacing-xl);
   line-height: 1.5;
+  opacity: 0;
+  animation: fadeInUp 1s ease 0.8s forwards;
 }
 
 .hero-actions {
   display: flex;
   gap: var(--spacing-md);
+  opacity: 0;
+  animation: fadeInUp 1s ease 1.1s forwards;
 }
 
 .cta-button {

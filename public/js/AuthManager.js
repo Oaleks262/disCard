@@ -5,6 +5,7 @@ class AuthManager {
     this.lastActiveTime = Date.now();
     this.resumeDebounceTimeout = null;
     this.resumeDebounceDelay = 2000; // 2 seconds debounce
+    this.justAuthenticated = false; // Flag to prevent resume check right after login
   }
 
   async checkAuthentication() {
@@ -119,7 +120,25 @@ class AuthManager {
       if (response.token) {
         // API client handles token storage
         AppState.user = response.user;
-        AppState.cards = response.cards || [];
+        
+        // Initialize encryption
+        await this.app.data.initializeEncryption(email, password);
+        
+        // Handle cards (decrypt if encrypted)
+        let serverCards = response.cards || [];
+        if (this.app.data.encryptionEnabled && serverCards.length > 0) {
+          try {
+            AppState.cards = await this.app.data.cryptoManager.decryptCards(serverCards, this.app.data.encryptionKey);
+          } catch (error) {
+            console.warn('Failed to decrypt cards during login:', error);
+            AppState.cards = serverCards;
+          }
+        } else {
+          AppState.cards = serverCards;
+        }
+        
+        // Save data locally (encrypted)
+        await this.app.data.saveLocalData();
         
         // Update language
         if (response.user.language) {
@@ -128,9 +147,19 @@ class AuthManager {
         }
         
         UIUtils.showToast('success', UIUtils.safeT('messages.loginSuccess', 'Успішний вхід'));
+        this.justAuthenticated = true; // Prevent resume check
         this.showAppScreen();
-        this.app.updateProfile();
-        this.app.renderCards();
+        
+        // Wait for app screen to load before updating UI
+        setTimeout(() => {
+          this.app.updateProfile();
+          this.app.renderCards();
+          
+          // Reset flag after UI is updated
+          setTimeout(() => {
+            this.justAuthenticated = false;
+          }, 2000);
+        }, 100);
       } else {
         throw new Error('No token received');
       }
@@ -174,14 +203,36 @@ class AuthManager {
       });
 
       if (response.token) {
-        // API client handles token storage
-        AppState.user = response.user;
-        AppState.cards = response.cards || [];
+        // Don't automatically log in after registration
+        // Clear any stored token and redirect to login form
+        localStorage.removeItem('authToken');
+        window.api.setToken(null);
+        AppState.user = null;
+        AppState.cards = [];
         
-        UIUtils.showToast('success', UIUtils.safeT('messages.registerSuccess', 'Акаунт створено'));
-        this.showAppScreen();
-        this.app.updateProfile();
-        this.app.renderCards();
+        UIUtils.showToast('success', UIUtils.safeT('messages.registerSuccess', 'Акаунт створено успішно! Увійдіть у свій акаунт'));
+        
+        // Clear registration form
+        const registerForm = document.getElementById('register-form-element');
+        if (registerForm) {
+          registerForm.reset();
+        }
+        
+        // Switch to login form
+        this.showLoginForm();
+        
+        // Pre-fill email for convenience
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) {
+          emailInput.value = email;
+          // Focus on password field
+          setTimeout(() => {
+            const passwordInput = document.getElementById('login-password');
+            if (passwordInput) {
+              passwordInput.focus();
+            }
+          }, 100);
+        }
       } else {
         throw new Error('No token received');
       }
@@ -194,8 +245,14 @@ class AuthManager {
   }
 
   handleLogout() {
+    console.log('🚪 LOGOUT TRIGGERED - Stack trace:');
+    console.trace();
+    
     window.api.logout();
     AppState.user = null;
+    
+    // Disable encryption
+    this.app.data.disableEncryption();
     AppState.cards = [];
     
     UIUtils.showToast('success', UIUtils.safeT('messages.logoutSuccess', 'Вихід виконано'));
@@ -298,6 +355,12 @@ class AuthManager {
   async handleAppResume() {
     // Don't check if user is not authenticated
     if (!AppState.user) {
+      return;
+    }
+    
+    // Don't check if we just authenticated (prevent resume check right after login/register)
+    if (this.justAuthenticated) {
+      console.log('🔄 Skipping resume check - user just authenticated');
       return;
     }
 

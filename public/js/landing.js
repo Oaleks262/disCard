@@ -208,7 +208,6 @@ class LandingAnimations {
   constructor() {
     this.initCodeAnimations();
     this.initParallaxEffect();
-    this.initTypingEffect();
   }
 
   initCodeAnimations() {
@@ -243,29 +242,6 @@ class LandingAnimations {
     });
   }
 
-  initTypingEffect() {
-    const title = document.querySelector('.hero-title');
-    if (title) {
-      const text = title.textContent.trim();
-      // Set initial content to empty immediately to avoid flash
-      title.textContent = '';
-      title.style.borderRight = '2px solid var(--primary)';
-      
-      let i = 0;
-      const typeWriter = () => {
-        if (i < text.length) {
-          title.textContent += text.charAt(i);
-          i++;
-          setTimeout(typeWriter, 50);
-        } else {
-          title.style.borderRight = 'none';
-        }
-      };
-      
-      // Start typing effect immediately to avoid showing static text
-      setTimeout(typeWriter, 100);
-    }
-  }
 }
 
 // Performance optimization

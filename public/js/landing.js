@@ -246,7 +246,8 @@ class LandingAnimations {
   initTypingEffect() {
     const title = document.querySelector('.hero-title');
     if (title) {
-      const text = title.textContent;
+      const text = title.textContent.trim();
+      // Set initial content to empty immediately to avoid flash
       title.textContent = '';
       title.style.borderRight = '2px solid var(--primary)';
       
@@ -261,8 +262,8 @@ class LandingAnimations {
         }
       };
       
-      // Start typing effect after a delay
-      setTimeout(typeWriter, 500);
+      // Start typing effect immediately to avoid showing static text
+      setTimeout(typeWriter, 100);
     }
   }
 }

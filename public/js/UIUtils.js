@@ -6,6 +6,49 @@ class UIUtils {
     return div.innerHTML;
   }
 
+  // Helper function to clean up stuck modals
+  static cleanupModals() {
+    const modals = document.querySelectorAll('.modal-overlay, #app-modal, #app-prompt-modal');
+    modals.forEach(modal => {
+      if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+      }
+    });
+    
+    // Reset body overflow
+    document.body.style.overflow = '';
+    
+    console.log('Cleaned up stuck modals');
+  }
+
+  // Initialize emergency modal cleanup
+  static initModalCleanup() {
+    // Emergency cleanup on double ESC press
+    let escPressCount = 0;
+    let escTimer = null;
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        escPressCount++;
+        
+        if (escTimer) {
+          clearTimeout(escTimer);
+        }
+        
+        if (escPressCount >= 2) {
+          // Double ESC - force cleanup
+          this.cleanupModals();
+          escPressCount = 0;
+        } else {
+          // Reset counter after 500ms
+          escTimer = setTimeout(() => {
+            escPressCount = 0;
+          }, 500);
+        }
+      }
+    });
+  }
+
   static safeT(key, fallback = key) {
     try {
       if (window.t && typeof window.t === 'function') {
@@ -171,6 +214,13 @@ class UIUtils {
       const hideModal = () => {
         overlay.classList.remove('show');
         document.body.style.overflow = '';
+        
+        // Remove modal from DOM after transition
+        setTimeout(() => {
+          if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+        }, 300); // Wait for CSS transition to complete
       };
 
       newConfirmBtn.addEventListener('click', () => {
@@ -277,6 +327,13 @@ class UIUtils {
       const hideModal = () => {
         overlay.classList.remove('show');
         document.body.style.overflow = '';
+        
+        // Remove modal from DOM after transition
+        setTimeout(() => {
+          if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+        }, 300); // Wait for CSS transition to complete
       };
 
       const handleConfirm = () => {

@@ -38,6 +38,9 @@ class LoyaltyCardsApp {
     if (document.readyState === 'loading') {
       await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
     }
+
+    // Initialize modal cleanup system
+    UIUtils.initModalCleanup();
     
     // Wait for libraries to be ready
     await new Promise(resolve => {

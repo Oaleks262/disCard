@@ -1606,9 +1606,11 @@ input:focus-visible,
 
 .modal-overlay .modal-message {
   color: var(--text-secondary);
-  margin: var(--spacing-md) 0 var(--spacing-xl) 0;
+  /* margin: var(--spacing-md) 0 var(--spacing-xl) 0; */
   line-height: 1.5;
   font-size: 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .modal-overlay .modal-input {
@@ -1753,7 +1755,7 @@ input:focus-visible,
 
 .modal-confirm .modal-message::before {
   content: "❓";
-  font-size: 1.5rem;
+  font-size: 3rem;
   flex-shrink: 0;
 }
 
@@ -1785,7 +1787,12 @@ input:focus-visible,
   }
   
   .modal-overlay .modal-body {
-    padding: var(--spacing-md) var(--spacing-lg);
+        flex-direction: row;
+        padding: var(--spacing-md) var(--spacing-lg);
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 1rem;
   }
   
   .modal-overlay .modal-actions {

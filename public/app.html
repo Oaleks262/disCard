@@ -477,7 +477,24 @@
                     </div>
                     <div class="form-group">
                         <label for="login-password" data-i18n="auth.password">Пароль</label>
-                        <input type="password" id="login-password" required>
+                        <div class="password-input-container">
+                            <input type="password" id="login-password" required>
+                            <button type="button" class="password-toggle" data-target="login-password">
+                                <svg class="eye-open" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <svg class="eye-closed" viewBox="0 0 24 24" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="forgot-password-link">
+                            <a href="#" id="forgot-password-btn" data-i18n="auth.forgotPassword">Забув пароль?</a>
+                        </div>
                     </div>
                     <button type="submit" class="auth-button" data-i18n="auth.login">Увійти</button>
                 </form>
@@ -500,12 +517,56 @@
                     </div>
                     <div class="form-group">
                         <label for="register-password" data-i18n="auth.password">Пароль</label>
-                        <input type="password" id="register-password" required minlength="6">
+                        <div class="password-input-container">
+                            <input type="password" id="register-password" required minlength="6">
+                            <button type="button" class="password-toggle" data-target="register-password">
+                                <svg class="eye-open" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                <svg class="eye-closed" viewBox="0 0 24 24" style="display: none;">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="auth-button" data-i18n="auth.register">Реєстрація</button>
                 </form>
                 <div class="auth-switch">
                     <p><span data-i18n="auth.hasAccount">Вже є акаунт?</span> <a href="#" id="show-login" data-i18n="auth.login">Увійти</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal hidden" id="forgot-password-modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 data-i18n="auth.resetPassword">Відновлення паролю</h3>
+                <button class="modal-close" id="forgot-password-close">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="forgot-password-alert" class="alert" style="display: none;"></div>
+                <p class="modal-text" data-i18n="auth.resetPasswordText">
+                    Введіть вашу електронну пошту і ми згенеруємо новий пароль та надішлемо його вам.
+                </p>
+                <form id="forgot-password-form">
+                    <div class="form-group">
+                        <label for="forgot-email" data-i18n="auth.email">Email</label>
+                        <input type="email" id="forgot-email" required placeholder="Введіть вашу електронну пошту">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="forgot-password-cancel" data-i18n="common.cancel">Скасувати</button>
+                        <button type="submit" class="btn-primary" id="forgot-password-submit" data-i18n="auth.generatePassword">Згенерувати пароль</button>
+                    </div>
+                </form>
+                <div class="loading hidden" id="forgot-password-loading">
+                    <p data-i18n="auth.generatingPassword">Генеруємо новий пароль...</p>
                 </div>
             </div>
         </div>
@@ -596,6 +657,23 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="card-color" data-i18n="cards.cardColor">Колір картки</label>
+                            <div class="color-picker-container">
+                                <input type="color" id="card-color" value="#3b82f6">
+                                <div class="color-presets">
+                                    <button type="button" class="color-preset selected" data-color="#3b82f6" style="background-color: #3b82f6;"></button>
+                                    <button type="button" class="color-preset" data-color="#ef4444" style="background-color: #ef4444;"></button>
+                                    <button type="button" class="color-preset" data-color="#10b981" style="background-color: #10b981;"></button>
+                                    <button type="button" class="color-preset" data-color="#f59e0b" style="background-color: #f59e0b;"></button>
+                                    <button type="button" class="color-preset" data-color="#8b5cf6" style="background-color: #8b5cf6;"></button>
+                                    <button type="button" class="color-preset" data-color="#ec4899" style="background-color: #ec4899;"></button>
+                                    <button type="button" class="color-preset" data-color="#6b7280" style="background-color: #6b7280;"></button>
+                                    <button type="button" class="color-preset" data-color="#0ea5e9" style="background-color: #0ea5e9;"></button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
                             <label for="card-code" data-i18n="cards.cardCode">Код картки</label>
                             <div class="code-input-group">
                                 <input type="text" id="card-code" data-i18n-placeholder="cards.manualEntry" placeholder="Введіть код або скануйте" pattern="[A-Za-z0-9\-\s]*" title="Тільки англійські літери, цифри, дефіси та пробіли" required>
@@ -671,15 +749,57 @@
                         <form id="change-password-form" class="password-form">
                             <div class="form-group">
                                 <label for="current-password" data-i18n="profile.currentPassword">Поточний пароль</label>
-                                <input type="password" id="current-password" required>
+                                <div class="password-input-container">
+                                    <input type="password" id="current-password" required>
+                                    <button type="button" class="password-toggle" data-target="current-password">
+                                        <svg class="eye-open" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        <svg class="eye-closed" viewBox="0 0 24 24" style="display: none;">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                            <line x1="1" y1="1" x2="23" y2="23"/>
+                                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="new-password" data-i18n="profile.newPassword">Новий пароль</label>
-                                <input type="password" id="new-password" required minlength="6">
+                                <div class="password-input-container">
+                                    <input type="password" id="new-password" required minlength="6">
+                                    <button type="button" class="password-toggle" data-target="new-password">
+                                        <svg class="eye-open" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        <svg class="eye-closed" viewBox="0 0 24 24" style="display: none;">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                            <line x1="1" y1="1" x2="23" y2="23"/>
+                                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="confirm-password" data-i18n="profile.confirmPassword">Підтвердити пароль</label>
-                                <input type="password" id="confirm-password" required>
+                                <div class="password-input-container">
+                                    <input type="password" id="confirm-password" required>
+                                    <button type="button" class="password-toggle" data-target="confirm-password">
+                                        <svg class="eye-open" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                            <circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                        <svg class="eye-closed" viewBox="0 0 24 24" style="display: none;">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                            <line x1="1" y1="1" x2="23" y2="23"/>
+                                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                             <button type="submit" class="submit-button" data-i18n="profile.changePasswordBtn">Змінити пароль</button>
                         </form>
@@ -910,6 +1030,7 @@
     
     <!-- Utility Modules -->
     <script src="/js/UIUtils.js?v=1"></script>
+    <script src="/js/PasswordToggle.js?v=1"></script>
     
     <!-- Core Modules -->
     <script src="/js/CryptoManager.js?v=1"></script>

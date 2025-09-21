@@ -296,6 +296,25 @@ a {
   text-decoration: underline;
 }
 
+/* Forgot Password Link */
+.forgot-password-link {
+  text-align: right;
+  margin-top: var(--spacing-sm);
+}
+
+.forgot-password-link a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: var(--font-weight-normal);
+  transition: var(--transition);
+}
+
+.forgot-password-link a:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 /* Two-Factor Authentication */
 .twofa-email-display {
   background: var(--bg-secondary);
@@ -521,6 +540,7 @@ a {
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-auto-rows: 1fr;
   gap: var(--spacing-lg);
 }
 
@@ -533,6 +553,9 @@ a {
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
 }
 
 .card-item::before {
@@ -560,8 +583,8 @@ a {
 
 .card-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   margin-bottom: var(--spacing-md);
 }
 
@@ -579,25 +602,10 @@ a {
   font-size: 0.75rem;
   font-weight: var(--font-weight-medium);
   text-transform: uppercase;
+  align-self: flex-end;
+  width: fit-content;
 }
 
-.card-code-preview {
-  width: 100%;
-  height: 120px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: var(--spacing-md);
-}
-
-.card-code-preview canvas {
-  max-width: 100%;
-  max-height: 100%;
-  transition: opacity 0.3s ease;
-}
 
 .code-loading {
   display: flex;
@@ -629,6 +637,7 @@ a {
   justify-content: space-between;
   font-size: 0.875rem;
   color: var(--text-muted);
+  margin-top: auto;
 }
 
 /* Empty State */
@@ -816,6 +825,46 @@ a {
   font-size: 0.875rem;
 }
 
+/* Password Input Container */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container input[type="password"],
+.password-input-container input[type="text"] {
+  padding-right: 3rem;
+  width: 100%;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--text-muted);
+  transition: var(--transition);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+}
+
 /* Form Buttons Container */
 .form-buttons {
   display: flex;
@@ -825,6 +874,7 @@ a {
 
 .submit-button {
   flex: 1;
+  width: 100%;
   padding: var(--spacing-md);
   background: var(--success);
   color: white;
@@ -899,12 +949,65 @@ a {
 }
 
 .field-value {
+  flex: 1;
   font-size: 1rem;
   color: var(--text-primary);
   font-weight: var(--font-weight-medium);
   max-width: 100%;
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* Color picker styles */
+.color-picker-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+#card-color {
+  width: 50px;
+  height: 40px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: none;
+}
+
+#card-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+}
+
+#card-color::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+}
+
+.color-presets {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.color-preset {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+.color-preset:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.color-preset.selected {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px var(--text-primary);
 }
 
 .field-with-copy {
@@ -1207,6 +1310,7 @@ a {
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
+  background: var(--overlay);
 }
 
 .modal.show {
@@ -1985,6 +2089,48 @@ input:focus-visible,
 .modal-overlay .modal-btn-secondary:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
+}
+
+/* General Button Styles */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 44px;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 44px;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Modal Actions Layout */
+.modal-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+  margin-top: var(--spacing-lg);
 }
 
 /* Ensure modal content is properly styled */

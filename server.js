@@ -82,6 +82,30 @@ function generateVerificationCode() {
   return Math.floor(10000 + Math.random() * 90000).toString();
 }
 
+// Generate random password
+function generateRandomPassword() {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*';
+  
+  // Ensure at least one character from each category
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  // Add remaining random characters
+  const allChars = uppercase + lowercase + numbers + symbols;
+  for (let i = password.length; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
 // Helper function to send verification email
 async function sendVerificationEmail(email, code, userAgent = '', ipAddress = '') {
   const resetToken = jwt.sign({ email, action: 'reset' }, process.env.JWT_SECRET, { expiresIn: process.env.RESET_TOKEN_EXPIRES || '1h' });
@@ -94,6 +118,7 @@ async function sendVerificationEmail(email, code, userAgent = '', ipAddress = ''
     html: `
       <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
+          <img src="${process.env.BASE_URL || 'https://discard.com.ua'}/logo.png" alt="${process.env.COMPANY_NAME}" style="height: 48px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
           <h1 style="color: #0066FF; margin: 0;">${process.env.COMPANY_NAME}</h1>
           <p style="color: #6C757D; margin: 5px 0;">${process.env.COMPANY_TAGLINE}</p>
         </div>
@@ -122,9 +147,11 @@ async function sendVerificationEmail(email, code, userAgent = '', ipAddress = ''
           <p style="color: #744210; margin-bottom: 15px; font-size: 14px;">
             Якщо ви не намагалися увійти в свій акаунт, негайно змініть пароль для безпеки.
           </p>
-          <a href="${resetUrl}" style="display: inline-block; background: #E53E3E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
-            Змінити пароль
-          </a>
+          <div style="text-align: center;">
+            <a href="${resetUrl}" style="display: inline-block; background: #E53E3E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+              Змінити пароль
+            </a>
+          </div>
         </div>
         
         <div style="text-align: center; margin-top: 30px; color: #6C757D; font-size: 12px;">
@@ -133,6 +160,73 @@ async function sendVerificationEmail(email, code, userAgent = '', ipAddress = ''
             <a href="mailto:${process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM}" style="color: #0066FF;">Підтримка</a> | 
             <a href="${process.env.BASE_URL}" style="color: #0066FF;">${process.env.COMPANY_NAME}</a>
           </p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return false;
+  }
+}
+
+// Helper function to send new password email
+async function sendNewPasswordEmail(email, newPassword, userAgent = '', ipAddress = '') {
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    to: email,
+    subject: `${process.env.COMPANY_NAME} - Новий пароль`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+        <div style="background-color: white; padding: 30px; border-radius: 8px; border: 1px solid #e9ecef;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <img src="${process.env.BASE_URL || 'https://discard.com.ua'}/logo.png" alt="${process.env.COMPANY_NAME}" style="height: 48px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
+            <h1 style="color: #0066FF; margin: 0; font-size: 28px;">${process.env.COMPANY_NAME}</h1>
+            <p style="color: #6c757d; margin: 5px 0 0 0; font-size: 14px;">${process.env.COMPANY_TAGLINE}</p>
+          </div>
+          
+          <h2 style="color: #1a1a1a; margin-bottom: 20px;">Новий пароль згенеровано</h2>
+          
+          <p style="color: #4a4a4a; line-height: 1.6; margin-bottom: 20px;">
+            Ми згенерували новий пароль для вашого акаунту ${process.env.COMPANY_NAME}.
+          </p>
+          
+          <div style="background-color: #f8f9fa; border: 2px solid #0066FF; border-radius: 8px; padding: 20px; text-align: center; margin: 25px 0;">
+            <p style="margin: 0 0 10px 0; color: #6c757d; font-size: 14px;">Ваш новий пароль:</p>
+            <p style="font-size: 24px; font-weight: bold; color: #0066FF; margin: 0; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+              ${newPassword}
+            </p>
+          </div>
+          
+          <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404; font-size: 14px;">
+              <strong>Важливо:</strong> Після входу рекомендуємо змінити пароль на більш зручний для вас.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.BASE_URL}/app" 
+               style="background-color: #0066FF; color: white; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-weight: bold; display: inline-block;">
+              Увійти в додаток
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #e9ecef; margin-top: 30px; padding-top: 20px;">
+            <p style="color: #6c757d; font-size: 12px; margin: 0;">
+              Цей пароль було згенеровано ${new Date().toLocaleString('uk-UA')}
+              ${userAgent ? `<br>Пристрій: ${userAgent}` : ''}
+              ${ipAddress ? `<br>IP адреса: ${ipAddress}` : ''}
+            </p>
+            
+            <p style="color: #6c757d; font-size: 12px; margin: 15px 0 0 0;">
+              Якщо ви не запитували новий пароль, зверніться до служби підтримки: 
+              <a href="mailto:${process.env.ADMIN_EMAIL}" style="color: #0066FF;">${process.env.ADMIN_EMAIL}</a>
+            </p>
+          </div>
         </div>
       </div>
     `
@@ -204,6 +298,16 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: true,
       enum: ['barcode', 'qrcode']
+    },
+    color: {
+      type: String,
+      default: '#3b82f6',
+      validate: {
+        validator: function(v) {
+          return /^#[0-9A-F]{6}$/i.test(v);
+        },
+        message: 'Color must be a valid hex color'
+      }
     },
     // New fields for encryption support
     encryptedCode: {
@@ -563,6 +667,53 @@ app.post('/api/auth/resend-code', [
   }
 });
 
+// Forgot password endpoint - generate and send new password
+app.post('/api/auth/forgot-password', [
+  body('email').isEmail().withMessage('Please provide a valid email')
+], handleValidationErrors, async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({ error: 'Користувача з такою електронною поштою не знайдено' });
+    }
+
+    // Generate new password
+    const newPassword = generateRandomPassword();
+    
+    // Hash new password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    // Update user password
+    await User.findByIdAndUpdate(user._id, { 
+      password: hashedPassword 
+    });
+
+    // Send email with new password
+    const userAgent = req.get('User-Agent') || '';
+    const ipAddress = req.ip || req.connection.remoteAddress || '';
+    
+    const emailSent = await sendNewPasswordEmail(user.email, newPassword, userAgent, ipAddress);
+    
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Помилка надсилання електронної пошти' });
+    }
+
+    console.log(`New password generated and sent to: ${user.email}`);
+    res.json({ 
+      message: `Новий пароль згенеровано та надіслано на ${user.email}`,
+      email: user.email 
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Reset password endpoint
 app.post('/api/auth/reset-password', [
   body('token').notEmpty().withMessage('Token is required'),
@@ -719,9 +870,16 @@ app.put('/api/auth/password', [
       return res.status(400).json({ error: 'Invalid current password' });
     }
 
-    user.password = newPassword;
-    await user.save();
+    // Hash new password explicitly
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    // Update password directly
+    await User.findByIdAndUpdate(req.user._id, { 
+      password: hashedPassword 
+    });
 
+    console.log(`Password changed successfully for user: ${user.email}`);
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
@@ -733,10 +891,11 @@ app.put('/api/auth/password', [
 app.post('/api/cards', [
   body('name').trim().isLength({ min: 1, max: 100 }).escape(),
   body('code').trim().isLength({ min: 1, max: 500 }),
-  body('codeType').isIn(['barcode', 'qrcode'])
+  body('codeType').isIn(['barcode', 'qrcode']),
+  body('color').optional().matches(/^#[0-9A-F]{6}$/i).withMessage('Color must be a valid hex color')
 ], handleValidationErrors, authenticateToken, async (req, res) => {
   try {
-    const { name, code, codeType } = req.body;
+    const { name, code, codeType, color } = req.body;
 
     const user = await User.findById(req.user._id);
     
@@ -752,6 +911,7 @@ app.post('/api/cards', [
     const newCard = {
       name,
       codeType,
+      color: color || '#3b82f6',
       encryptedCode,
       isEncrypted: true,
       createdAt: new Date()
@@ -778,11 +938,12 @@ app.post('/api/cards', [
 app.put('/api/cards/:id', [
   body('name').optional().trim().isLength({ min: 1, max: 100 }).escape(),
   body('code').optional().trim().isLength({ min: 1, max: 500 }),
-  body('codeType').optional().isIn(['barcode', 'qrcode'])
+  body('codeType').optional().isIn(['barcode', 'qrcode']),
+  body('color').optional().matches(/^#[0-9A-F]{6}$/i).withMessage('Color must be a valid hex color')
 ], handleValidationErrors, authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code, codeType } = req.body;
+    const { name, code, codeType, color } = req.body;
 
     const user = await User.findById(req.user._id);
     const card = user.cards.id(id);
@@ -793,6 +954,7 @@ app.put('/api/cards/:id', [
 
     if (name) card.name = name;
     if (codeType) card.codeType = codeType;
+    if (color) card.color = color;
     
     // Handle code update with server-side encryption
     if (code !== undefined) {

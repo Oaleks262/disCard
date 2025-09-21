@@ -156,7 +156,18 @@ const translations = {
       registerTitle: "Створення акаунту",
       noAccount: "Немає акаунту?",
       hasAccount: "Вже є акаунт?",
-      forgotPassword: "Забули пароль?"
+      forgotPassword: "Забув пароль?",
+      resetPassword: "Відновлення паролю",
+      resetPasswordText: "Введіть вашу електронну пошту і ми згенеруємо новий пароль та надішлемо його вам.",
+      generatePassword: "Згенерувати пароль",
+      generatingPassword: "Генеруємо новий пароль..."
+    },
+    
+    // Common
+    common: {
+      cancel: "Скасувати",
+      ok: "OK",
+      save: "Зберегти"
     },
     
     // Two-Factor Authentication
@@ -223,6 +234,7 @@ const translations = {
       addCard: "Додати картку",
       cardName: "Назва картки",
       cardNamePlaceholder: "Наприклад: АТБ",
+      cardColor: "Колір картки",
       cardCode: "Код картки",
       codeType: "Тип коду",
       barcode: "Штрих-код",
@@ -461,7 +473,18 @@ const translations = {
       registerTitle: "Create your account",
       noAccount: "Don't have an account?",
       hasAccount: "Already have an account?",
-      forgotPassword: "Forgot password?"
+      forgotPassword: "Forgot password?",
+      resetPassword: "Password Recovery",
+      resetPasswordText: "Enter your email address and we will generate a new password and send it to you.",
+      generatePassword: "Generate Password",
+      generatingPassword: "Generating new password..."
+    },
+    
+    // Common
+    common: {
+      cancel: "Cancel",
+      ok: "OK",
+      save: "Save"
     },
     
     // Two-Factor Authentication
@@ -528,6 +551,7 @@ const translations = {
       addCard: "Add card",
       cardName: "Card name",
       cardNamePlaceholder: "e.g.: Starbucks",
+      cardColor: "Card color",
       cardCode: "Card code",
       codeType: "Code type",
       barcode: "Barcode",

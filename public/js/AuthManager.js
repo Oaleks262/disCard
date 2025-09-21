@@ -656,10 +656,124 @@ class AuthManager {
       this.showLoginForm();
     });
 
+    // Forgot password
+    document.getElementById('forgot-password-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.showForgotPasswordModal();
+    });
+
     // Profile actions
     document.getElementById('logout-button')?.addEventListener('click', this.handleLogout.bind(this));
     document.getElementById('change-password-form')?.addEventListener('submit', this.handleChangePassword.bind(this));
     document.getElementById('edit-name')?.addEventListener('click', this.handleEditName.bind(this));
+  }
+
+  // Forgot Password Modal functionality
+  showForgotPasswordModal() {
+    const modal = document.getElementById('forgot-password-modal');
+    const form = document.getElementById('forgot-password-form');
+    const emailInput = document.getElementById('forgot-email');
+    const alert = document.getElementById('forgot-password-alert');
+    const loading = document.getElementById('forgot-password-loading');
+
+    // Reset form
+    form.reset();
+    alert.style.display = 'none';
+    loading.classList.add('hidden');
+    form.style.display = 'block';
+
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.classList.add('show');
+
+    // Setup event listeners
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('show');
+    };
+
+    // Close button
+    document.getElementById('forgot-password-close').onclick = closeModal;
+    document.getElementById('forgot-password-cancel').onclick = closeModal;
+
+    // Close on backdrop click
+    modal.onclick = (e) => {
+      if (e.target === modal || e.target.classList.contains('modal-backdrop')) {
+        closeModal();
+      }
+    };
+
+    // Form submission
+    form.onsubmit = (e) => this.handleForgotPassword(e);
+
+    // Focus email input
+    setTimeout(() => emailInput.focus(), 100);
+  }
+
+  async handleForgotPassword(e) {
+    e.preventDefault();
+    
+    const emailInput = document.getElementById('forgot-email');
+    const alert = document.getElementById('forgot-password-alert');
+    const loading = document.getElementById('forgot-password-loading');
+    const form = document.getElementById('forgot-password-form');
+    const submitBtn = document.getElementById('forgot-password-submit');
+
+    const email = emailInput.value.trim();
+    
+    if (!email) {
+      this.showForgotPasswordAlert('error', 'Введіть електронну пошту');
+      return;
+    }
+
+    // Show loading
+    form.style.display = 'none';
+    loading.classList.remove('hidden');
+    alert.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        this.showForgotPasswordAlert('success', 
+          `Новий пароль згенеровано та надіслано на ${email}. Перевірте вашу пошту.`
+        );
+        
+        // Hide loading, show success
+        loading.classList.add('hidden');
+        
+        // Close modal after 3 seconds
+        setTimeout(() => {
+          const modal = document.getElementById('forgot-password-modal');
+          modal.classList.add('hidden');
+          modal.classList.remove('show');
+        }, 3000);
+      } else {
+        throw new Error(data.error || 'Помилка відновлення паролю');
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      this.showForgotPasswordAlert('error', error.message);
+      
+      // Show form again
+      loading.classList.add('hidden');
+      form.style.display = 'block';
+    }
+  }
+
+  showForgotPasswordAlert(type, message) {
+    const alert = document.getElementById('forgot-password-alert');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    alert.style.display = 'block';
   }
 }
 

@@ -19,6 +19,7 @@ class CardManager {
     
     const name = document.getElementById('card-name').value;
     const code = document.getElementById('card-code').value;
+    const color = document.getElementById('card-color').value;
     const codeTypeElement = document.querySelector('input[name="codeType"]:checked');
     
     if (!codeTypeElement) {
@@ -51,7 +52,8 @@ class CardManager {
         body: JSON.stringify({ 
           name, 
           code,
-          codeType
+          codeType,
+          color
         })
       });
 
@@ -59,6 +61,11 @@ class CardManager {
         // Server returns decrypted cards ready for display
         AppState.cards = response.cards;
         this.renderCards();
+        
+        // Save updated cards to localStorage
+        if (this.app.dataManager) {
+          await this.app.dataManager.saveLocalData();
+        }
         
         const successMessage = UIUtils.safeT('messages.cardAdded', 'Картку додано');
         UIUtils.showToast('success', successMessage);
@@ -71,6 +78,7 @@ class CardManager {
           // Manual reset as fallback
           document.getElementById('card-name').value = '';
           document.getElementById('card-code').value = '';
+          document.getElementById('card-color').value = '#3b82f6';
           const defaultCodeType = document.querySelector('input[name="codeType"][value="barcode"]');
           if (defaultCodeType) defaultCodeType.checked = true;
         }
@@ -116,11 +124,15 @@ class CardManager {
       const card = AppState.cards[index];
       
       cardEl.addEventListener('click', () => {
+        // Validate card before showing modal
+        if (!card || !card.name) {
+          console.error('Invalid card data:', card);
+          UIUtils.showToast('error', 'Картка має недійсні дані');
+          return;
+        }
         this.showCardModal(card);
       });
       
-      // Generate code for card preview
-      this.generateCardPreview(card, cardEl);
     });
 
     // Update cards count in profile
@@ -133,23 +145,35 @@ class CardManager {
     }
   }
 
+  // Helper function to get contrasting text color
+  getContrastTextColor(hexColor) {
+    // Remove # if present
+    const color = hexColor.replace('#', '');
+    
+    // Convert to RGB
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return white for dark colors, black for light colors
+    return luminance > 0.5 ? '#000000' : '#ffffff';
+  }
+
   createCardHTML(card) {
     const createdDate = window.i18n.formatTime(card.createdAt);
     const cardTypeText = card.codeType === 'qrcode' ? 'QR' : UIUtils.safeT('cards.barcode', 'Штрих-код');
     const createdText = UIUtils.safeT('cards.created', 'Створено');
+    const cardColor = card.color || '#3b82f6';
+    const textColor = this.getContrastTextColor(cardColor);
     
     return `
-      <div class="card-item" data-card-id="${card._id}">
+      <div class="card-item" data-card-id="${card._id}" style="border-left: 4px solid ${cardColor};">
         <div class="card-header">
+          <div class="card-type" style="background-color: ${cardColor}; color: ${textColor};">${cardTypeText}</div>
           <div class="card-name">${UIUtils.escapeHtml(card.name)}</div>
-          <div class="card-type">${cardTypeText}</div>
-        </div>
-        <div class="card-code-preview">
-          <div class="code-loading" id="loading-${card._id}">
-            <div class="loading-spinner"></div>
-            <span>Генерування коду...</span>
-          </div>
-          <canvas id="card-canvas-${card._id}" width="160" height="160" style="display: none;"></canvas>
         </div>
         <div class="card-info">
           <span>${createdText}: ${createdDate}</span>
@@ -158,81 +182,6 @@ class CardManager {
     `;
   }
 
-  generateCardPreview(card, cardElement) {
-    const canvas = cardElement.querySelector(`#card-canvas-${card._id}`);
-    const loading = cardElement.querySelector(`#loading-${card._id}`);
-    
-    if (!canvas) {
-      return;
-    }
-
-    // Show loading, hide canvas
-    if (loading) loading.style.display = 'flex';
-    canvas.style.display = 'none';
-
-    try {
-      if (card.codeType === 'qrcode') {
-        if (typeof QRCode === 'undefined') {
-          this.hideLoadingShowError(loading, canvas, 'QRCode library not loaded');
-          return;
-        }
-        
-        // Clear canvas before generating new QR code
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Check if card has valid code
-        const codeValue = card.code || card.encryptedCode || 'NO_CODE';
-        
-        QRCode.toCanvas(canvas, codeValue, {
-          width: 160,
-          margin: 1,
-          color: {
-            dark: '#000000',  // Always black
-            light: '#FFFFFF'  // Always white
-          }
-        }, (error) => {
-          if (error) {
-            this.hideLoadingShowError(loading, canvas, 'Error generating QR code');
-          } else {
-            // Success - hide loading, show canvas
-            if (loading) loading.style.display = 'none';
-            canvas.style.display = 'block';
-          }
-        });
-      } else {
-        if (typeof JsBarcode === 'undefined') {
-          this.hideLoadingShowError(loading, canvas, 'JsBarcode library not loaded');
-          return;
-        }
-
-        // Check if card has valid code
-        const codeValue = card.code || card.encryptedCode || 'NO_CODE';
-        
-        JsBarcode(canvas, codeValue, {
-          format: "CODE128",
-          width: 2,
-          height: 60,
-          displayValue: false,
-          background: "#FFFFFF",
-          lineColor: "#000000"
-        });
-        
-        // Success - hide loading, show canvas
-        if (loading) loading.style.display = 'none';
-        canvas.style.display = 'block';
-      }
-    } catch (error) {
-      this.hideLoadingShowError(loading, canvas, 'Code generation failed');
-    }
-  }
-
-  hideLoadingShowError(loading, canvas, errorMessage) {
-    if (loading) {
-      loading.innerHTML = `<span style="color: #ff6b6b;">⚠️ ${errorMessage}</span>`;
-    }
-    canvas.style.display = 'none';
-  }
 
   showCardModal(card) {
     this.currentCard = card;
@@ -247,18 +196,103 @@ class CardManager {
     }
     
     title.textContent = card.name;
-    codeText.textContent = card.code || 'No code available';
     
-    // Generate code
+    // Clear any previous canvas content and error messages
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'none';
+    }
+    
+    // Remove any previous error messages
+    const existingErrors = modal.querySelectorAll('.modal-error-message');
+    existingErrors.forEach(err => err.remove());
+    
+    // Check if card has valid code
+    if (!card.code || typeof card.code !== 'string' || card.code.trim() === '') {
+      // Show loading state
+      this.showModalLoading(codeText);
+      // Set up retry mechanism to check for code availability
+      this.waitForCardCode(card);
+    } else {
+      // Generate code immediately if available
+      this.generateModalCode(card);
+    }
+    
+    modal.classList.add('show');
+    
+    // Add backdrop click listener (only once)
+    if (!modal.hasAttribute('data-backdrop-listener')) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal || e.target.classList.contains('modal-backdrop')) {
+          this.closeCardModal();
+        }
+      });
+      modal.setAttribute('data-backdrop-listener', 'true');
+    }
+    
+    // Add ESC key listener
+    this.handleEscKey = (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('show')) {
+        this.closeCardModal();
+      }
+    };
+    document.addEventListener('keydown', this.handleEscKey);
+  }
+
+  showModalLoading(codeText) {
+    if (codeText) {
+      codeText.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px;">
+          <div class="loading-spinner" style="width: 20px; height: 20px;"></div>
+          <span>Завантаження коду...</span>
+        </div>
+      `;
+      codeText.style.display = 'block';
+    }
+  }
+
+  waitForCardCode(card) {
+    const maxRetries = 20; // 10 seconds max
+    let retryCount = 0;
+    
+    const checkCode = () => {
+      retryCount++;
+      
+      // Find updated card from AppState
+      const updatedCard = AppState.cards.find(c => c._id === card._id);
+      
+      if (updatedCard && updatedCard.code && updatedCard.code.trim() !== '') {
+        // Code is now available, generate it
+        this.currentCard = updatedCard;
+        this.generateModalCode(updatedCard);
+      } else if (retryCount < maxRetries) {
+        // Retry after 500ms
+        setTimeout(checkCode, 500);
+      } else {
+        // Max retries reached, show error
+        this.showModalError('Не вдалося завантажити код картки');
+      }
+    };
+    
+    // Start checking
+    setTimeout(checkCode, 500);
+  }
+
+  generateModalCode(card) {
+    const canvas = document.getElementById('modal-canvas');
+    const codeText = document.getElementById('modal-code-text');
+    
+    if (!canvas || !codeText) return;
+    
+    // Update code text
+    codeText.textContent = card.code;
+    codeText.style.display = 'block';
+    
     try {
       if (card.codeType === 'qrcode') {
         if (typeof QRCode === 'undefined') {
           throw new Error('QRCode library not loaded');
-        }
-        
-        // Validate card code data
-        if (!card.code || typeof card.code !== 'string' || card.code.trim() === '') {
-          throw new Error('Invalid card code data');
         }
         
         // Set canvas class for QR code styling
@@ -274,6 +308,12 @@ class CardManager {
           color: {
             dark: '#000000',  // Always black
             light: '#FFFFFF'  // Always white
+          }
+        }, (error) => {
+          if (error) {
+            this.showModalError(`Помилка генерації QR-коду: ${error.message}`);
+          } else {
+            canvas.style.display = 'block';
           }
         });
       } else {
@@ -291,41 +331,29 @@ class CardManager {
           background: '#FFFFFF',  // Always white background
           lineColor: '#000000'    // Always black lines
         });
+        
+        canvas.style.display = 'block';
       }
     } catch (error) {
-      console.error('Modal code generation error:', error);
-      
-      // Show error message in modal
-      const errorMsg = document.createElement('div');
-      errorMsg.style.cssText = 'text-align: center; padding: 20px; color: var(--error, #EF4444);';
-      errorMsg.textContent = `Помилка генерації ${card.codeType === 'qrcode' ? 'QR-коду' : 'штрих-коду'}: ${error.message}`;
-      
-      // Replace canvas with error message
-      if (canvas.parentNode) {
-        canvas.parentNode.insertBefore(errorMsg, canvas);
-        canvas.style.display = 'none';
-      }
+      this.showModalError(`Помилка генерації ${card.codeType === 'qrcode' ? 'QR-коду' : 'штрих-коду'}: ${error.message}`);
     }
+  }
+
+  showModalError(message) {
+    const modal = document.getElementById('card-modal');
+    const canvas = document.getElementById('modal-canvas');
+    const codeText = document.getElementById('modal-code-text');
     
-    modal.classList.add('show');
+    if (canvas) canvas.style.display = 'none';
     
-    // Add backdrop click listener (only once)
-    if (!modal.hasAttribute('data-backdrop-listener')) {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          this.closeCardModal();
-        }
-      });
-      modal.setAttribute('data-backdrop-listener', 'true');
+    if (codeText) {
+      codeText.innerHTML = `
+        <div class="modal-error-message" style="text-align: center; padding: 20px; color: var(--error, #EF4444);">
+          ⚠️ ${message}
+        </div>
+      `;
+      codeText.style.display = 'block';
     }
-    
-    // Add ESC key listener
-    this.handleEscKey = (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('show')) {
-        this.closeCardModal();
-      }
-    };
-    document.addEventListener('keydown', this.handleEscKey);
   }
 
   closeCardModal() {
@@ -358,6 +386,12 @@ class CardManager {
       AppState.cards = response.cards;
       this.renderCards();
       this.closeCardModal();
+      
+      // Save updated cards to localStorage
+      if (this.app.dataManager) {
+        await this.app.dataManager.saveLocalData();
+      }
+      
       UIUtils.showToast('success', UIUtils.safeT('messages.cardDeleted', 'Картку видалено'));
     } catch (error) {
       console.error('Delete card error:', error);
@@ -469,59 +503,6 @@ class CardManager {
     document.querySelector('input[name="codeType"][value="barcode"]').checked = true;
   }
 
-  regenerateModalCode() {
-    if (!this.currentCard) {
-      return;
-    }
-
-    const canvas = document.getElementById('modal-canvas');
-    if (!canvas) {
-      return;
-    }
-
-    const card = this.currentCard;
-
-    try {
-      if (card.codeType === 'qrcode') {
-        if (typeof QRCode === 'undefined') {
-          throw new Error('QRCode library not loaded');
-        }
-        
-        // Set canvas class for QR code styling
-        canvas.className = 'qr-canvas';
-        
-        // Clear canvas before generating new QR code
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        QRCode.toCanvas(canvas, card.code, {
-          width: 300,
-          margin: 4,
-          color: {
-            dark: '#000000',  // Always black
-            light: '#FFFFFF'  // Always white
-          }
-        });
-      } else {
-        if (typeof JsBarcode === 'undefined') {
-          throw new Error('JsBarcode library not loaded');
-        }
-        
-        // Set canvas class for barcode styling
-        canvas.className = 'barcode-canvas';
-        
-        JsBarcode(canvas, card.code, {
-          width: 3,
-          height: 150,
-          fontSize: 18,
-          background: '#FFFFFF',  // Always white background
-          lineColor: '#000000'    // Always black lines
-        });
-      }
-    } catch (error) {
-      console.error('Modal code regeneration error:', error);
-    }
-  }
 
   // Setup card event listeners
   setupCardEventListeners() {
@@ -594,15 +575,48 @@ class CardManager {
         this.updateCodePreview();
       });
     });
+
+    // Color picker presets
+    document.querySelectorAll('.color-preset').forEach(preset => {
+      preset.addEventListener('click', () => {
+        const color = preset.dataset.color;
+        const colorInput = document.getElementById('card-color');
+        if (colorInput) {
+          colorInput.value = color;
+          
+          // Update selection visual
+          document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('selected'));
+          preset.classList.add('selected');
+        }
+      });
+    });
+
+    // Color input change
+    document.getElementById('card-color')?.addEventListener('input', (e) => {
+      const selectedColor = e.target.value;
+      
+      // Update preset selection
+      document.querySelectorAll('.color-preset').forEach(preset => {
+        preset.classList.remove('selected');
+        if (preset.dataset.color === selectedColor) {
+          preset.classList.add('selected');
+        }
+      });
+    });
   }
 
   cancelAddCard() {
     // Clear form fields
     document.getElementById('card-name').value = '';
     document.getElementById('card-code').value = '';
+    document.getElementById('card-color').value = '#3b82f6';
     
     // Reset code type to default (barcode)
     document.querySelector('input[name="codeType"][value="barcode"]').checked = true;
+    
+    // Reset color preset selection
+    document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('selected'));
+    document.querySelector('.color-preset[data-color="#3b82f6"]')?.classList.add('selected');
     
     // Clear code preview
     this.clearCodePreview();

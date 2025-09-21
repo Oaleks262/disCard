@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="heroTitle">Всі карти лояльності в одному місці</title>
+    <meta name="google-adsense-account" content="ca-pub-8972937738510733">
+
+    <!-- SEO Meta tags -->
+    <meta name="description" content="Скануй, зберігай та використовуй картки магазинів. Сучасний PWA додаток для управління картами лояльності. Безкоштовно, безпечно, працює офлайн.">
+    <meta name="keywords" content="карти лояльності, сканування карток, PWA додаток, штрих код, QR код, дисконтні карти, мобільний додаток, офлайн, безкоштовно, Україна, магазини, АТБ, Сільпо, EVA, бонусні карти, накопичувальні карти">
+    <meta name="author" content="disCard Team">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="language" content="uk-UA">
+    <meta name="geo.region" content="UA">
+    <meta name="geo.placename" content="Ukraine">
+    <meta name="rating" content="general">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://discard.com.ua">
+    <meta property="og:title" content="disCard - Всі карти лояльності в одному місці | Безкоштовний PWA додаток">
+    <meta property="og:description" content="Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку. PWA технологія, офлайн доступ, максимальна безпека. Спробуй безкоштовно!">
+    <meta property="og:image" content="https://discard.com.ua/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="disCard - додаток для карт лояльності">
+    <meta property="og:site_name" content="disCard">
+    <meta property="og:locale" content="uk_UA">
+    <meta property="og:locale:alternate" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://discard.com.ua">
+    <meta name="twitter:title" content="disCard - Всі карти лояльності в одному місці">
+    <meta name="twitter:description" content="Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку. PWA, офлайн, безкоштовно.">
+    <meta name="twitter:image" content="https://discard.com.ua/og-image.png">
+    <meta name="twitter:image:alt" content="disCard - додаток для карт лояльності">
+    <meta name="twitter:site" content="@discard_app">
+    <meta name="twitter:creator" content="@discard_app">
+
+    <!-- Additional SEO Meta -->
+    <meta name="application-name" content="disCard">
+    <meta name="msapplication-tooltip" content="Карти лояльності в одному місці">
+    <meta name="msapplication-starturl" content="/">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="canonical" href="https://discard.com.ua/">
+    
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#0066FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="disCard">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/logo.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/landing.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "disCard",
+        "alternateName": "disCard - Карти лояльності",
+        "url": "https://discard.com.ua",
+        "description": "Сучасний PWA додаток для управління картами лояльності. Скануй, зберігай та використовуй картки магазинів у зручному мобільному додатку.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "iOS, Android, Windows, macOS, Linux",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "UAH",
+            "availability": "https://schema.org/InStock",
+            "validFrom": "2024-01-01"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "disCard Team",
+            "url": "https://discard.com.ua"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "disCard Team",
+            "url": "https://discard.com.ua",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://discard.com.ua/icons/logo.png",
+                "width": 512,
+                "height": 512
+            }
+        },
+        "screenshot": [
+            {
+                "@type": "ImageObject",
+                "url": "https://discard.com.ua/screenshots/cards-view.png",
+                "caption": "Перегляд всіх карт лояльності"
+            },
+            {
+                "@type": "ImageObject", 
+                "url": "https://discard.com.ua/screenshots/scanner-view.png",
+                "caption": "Сканування штрих-кодів та QR-кодів"
+            }
+        ],
+        "featureList": [
+            "Сканування QR-кодів та штрих-кодів",
+            "Безпечне зберігання карт",
+            "Офлайн доступ",
+            "PWA технологія",
+            "Безкоштовно",
+            "Підтримка українських магазинів"
+        ],
+        "inLanguage": ["uk-UA", "en-US"],
+        "availableLanguage": [
+            {
+                "@type": "Language",
+                "name": "Українська",
+                "alternateName": "uk-UA"
+            },
+            {
+                "@type": "Language", 
+                "name": "English",
+                "alternateName": "en-US"
+            }
+        ],
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "softwareVersion": "1.0.0",
+        "datePublished": "2024-01-01",
+        "dateModified": "2024-01-01",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "156",
+            "bestRating": "5",
+            "worstRating": "1"
+        }
+    }
+    </script>
+
+    <!-- Organization Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "disCard",
+        "url": "https://discard.com.ua",
+        "logo": "https://discard.com.ua/logo.png",
+        "description": "Команда розробників PWA додатку для управління картами лояльності",
+        "foundingDate": "2024",
+        "founders": {
+            "@type": "Person",
+            "name": "disCard Team"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": ["Ukrainian", "English"]
+        },
+        "sameAs": [
+            "https://twitter.com/discard_app",
+            "https://facebook.com/discard.com.ua"
+        ]
+    }
+    </script>
+
+    <!-- Website Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "disCard",
+        "url": "https://discard.com.ua",
+        "description": "PWA додаток для управління картами лояльності",
+        "inLanguage": "uk-UA",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://discard.com.ua/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "disCard Team"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo" id="logo-link">
+                    <img src="/icons/logo.png" alt="disCard" width="48" height="48" class="logo-icon">
+                    <span class="logo-text">disCard</span>
+                </a>
+                
+                <div class="header-actions">
+                    <button class="theme-toggle" id="theme-toggle">
+                        <svg class="theme-icon" viewBox="0 0 24 24" width="20" height="20">
+                            <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <div class="language-switcher">
+                        <button class="lang-btn active" data-lang="uk">УК</button>
+                        <button class="lang-btn" data-lang="en">EN</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1 class="hero-title" data-i18n="heroTitle">
+                            Всі карти лояльності в одному місці
+                        </h1>
+                        <p class="hero-subtitle" data-i18n="heroSubtitle">
+                            Скануй, зберігай та використовуй картки магазинів у зручному PWA додатку
+                        </p>
+                        <div class="hero-actions">
+                            <button class="cta-button" id="cta-button" data-i18n="cta">
+                                Спробувати безкоштовно
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="hero-visual">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="app-interface">
+                                    <div class="card-preview">
+                                        <div class="card-item">
+                                            <div class="barcode animated"></div>
+                                            <span data-i18n="mockupCards.stores.atb">АТБ</span>
+                                        </div>
+                                        <div class="card-item">
+                                            <img src="/icons/qr-site.png" alt="QR код" width="60" height="40" class="qr-image">
+                                            <span data-i18n="mockupCards.stores.silpo">Сільпо</span>
+                                        </div>
+                                        <div class="card-item">
+                                            <div class="barcode animated"></div>
+                                            <span data-i18n="mockupCards.stores.eva">EVA</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features" id="features">
+            <div class="container">
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H5V21H19V9Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.scan">Сканування камерою</h3>
+                        <p class="feature-description" data-i18n="features.scanDescription">Легко додавайте нові карти простим скануванням штрих-коду або QR-коду</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.4C15.5,11.4 16,11.9 16,12.6V16.6C16,17.3 15.5,17.8 14.8,17.8H9.2C8.5,17.8 8,17.3 8,16.6V12.6C8,11.9 8.5,11.4 9.2,11.4V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11.4H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.store">Безпечне зберігання</h3>
+                        <p class="feature-description" data-i18n="features.storeDescription">Ваші карти зберігаються в зашифрованому вигляді з доступом лише для вас</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M13,9V7.5A2.5,2.5 0 0,0 10.5,5A2.5,2.5 0 0,0 8,7.5V9C7.45,9 7,9.45 7,10V16C7,16.55 7.45,17 8,17H13C13.55,17 14,16.55 14,16V10C14,9.45 13.55,9 13,9M12.5,9H8.5V7.5A2,2 0 0,1 10.5,5.5A2,2 0 0,1 12.5,7.5V9Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="feature-title" data-i18n="features.access">Швидкий доступ</h3>
+                        <p class="feature-description" data-i18n="features.accessDescription">Миттєвий доступ до всіх ваших карт навіть офлайн завдяки PWA технології</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Key Features Section -->
+        <section class="key-features" id="key-features">
+            <div class="container">
+                <h2 class="section-title" data-i18n="keyFeatures.title">Переваги disCard</h2>
+                <div class="key-features-grid">
+                    <div class="key-feature-card">
+                        <div class="key-feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="key-feature-title" data-i18n="keyFeatures.pwa.title">PWA додаток</h3>
+                        <p class="key-feature-description" data-i18n="keyFeatures.pwa.description">Прогресивний веб-додаток що працює як нативна програма. Встановлюється прямо з браузера без потреби App Store чи Google Play. Автоматичні оновлення та швидкий запуск.</p>
+                        <ul class="key-feature-list">
+                            <li data-i18n="keyFeatures.pwa.benefit1">Встановлення за 10 секунд</li>
+                            <li data-i18n="keyFeatures.pwa.benefit2">Не займає багато місця</li>
+                            <li data-i18n="keyFeatures.pwa.benefit3">Автооновлення в фоні</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="key-feature-card">
+                        <div class="key-feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="key-feature-title" data-i18n="keyFeatures.offline.title">Робота офлайн</h3>
+                        <p class="key-feature-description" data-i18n="keyFeatures.offline.description">Всі ваші карти доступні навіть без інтернет-з'єднання. Використовуйте картки лояльності в магазині, метро чи будь-де. Синхронізація відбувається автоматично при підключенні.</p>
+                        <ul class="key-feature-list">
+                            <li data-i18n="keyFeatures.offline.benefit1">100% доступність карток</li>
+                            <li data-i18n="keyFeatures.offline.benefit2">Швидке завантаження</li>
+                            <li data-i18n="keyFeatures.offline.benefit3">Економія трафіку</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="key-feature-card">
+                        <div class="key-feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11.4C15.5,11.4 16,11.9 16,12.6V16.6C16,17.3 15.5,17.8 14.8,17.8H9.2C8.5,17.8 8,17.3 8,16.6V12.6C8,11.9 8.5,11.4 9.2,11.4V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11.4H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="key-feature-title" data-i18n="keyFeatures.secure.title">Безпечне зберігання</h3>
+                        <p class="key-feature-description" data-i18n="keyFeatures.secure.description">Ваші дані захищені сучасним шифруванням та зберігаються локально на вашому пристрої. Ніхто не має доступу до ваших карток, крім вас. Повна конфіденційність гарантована.</p>
+                        <ul class="key-feature-list">
+                            <li data-i18n="keyFeatures.secure.benefit1">AES-256 шифрування</li>
+                            <li data-i18n="keyFeatures.secure.benefit2">Локальне зберігання</li>
+                            <li data-i18n="keyFeatures.secure.benefit3">Нульовий доступ третіх осіб</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="key-feature-card">
+                        <div class="key-feature-icon">
+                            <svg viewBox="0 0 24 24" width="48" height="48">
+                                <path d="M7,15H9C9,16.08 10.37,17 12,17C13.63,17 15,16.08 15,15C15,13.9 13.96,13.5 11.76,12.97C9.64,12.44 7,11.78 7,9C7,7.21 8.47,5.69 10.5,5.18V3H13.5V5.18C15.53,5.69 17,7.21 17,9H15C15,7.92 13.63,7 12,7C10.37,7 9,7.92 9,9C9,10.1 10.04,10.5 12.24,11.03C14.36,11.56 17,12.22 17,15C17,16.79 15.53,18.31 13.5,18.82V21H10.5V18.82C8.47,18.31 7,16.79 7,15Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="key-feature-title" data-i18n="keyFeatures.free.title">Повністю безкоштовно</h3>
+                        <p class="key-feature-description" data-i18n="keyFeatures.free.description">Ніяких прихованих платежів, підписок чи обмежень. Всі функції доступні безкоштовно назавжди. Підтримується рекламою, що не заважає користуванню додатком.</p>
+                        <ul class="key-feature-list">
+                            <li data-i18n="keyFeatures.free.benefit1">Без підписок</li>
+                            <li data-i18n="keyFeatures.free.benefit2">Всі функції доступні</li>
+                            <li data-i18n="keyFeatures.free.benefit3">Мінімум реклами</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Installation Section -->
+        <section class="installation" id="installation">
+            <div class="container">
+                <h2 class="section-title" data-i18n="installation.title">Як встановити додаток на телефон</h2>
+                <div class="installation-tabs">
+                    <button class="tab-btn active" data-tab="android">Android</button>
+                    <button class="tab-btn" data-tab="ios">iOS</button>
+                </div>
+                
+                <div class="tab-content active" id="android-tab">
+                    <div class="installation-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.android.step1.title">Відкрийте додаток у браузері</h4>
+                                <p data-i18n="installation.android.step1.desc">Перейдіть на сайт через Chrome або будь-який інший браузер</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.android.step2.title">Знайдіть меню браузера</h4>
+                                <p data-i18n="installation.android.step2.desc">Натисніть на три крапки (⋮) у верхньому правому куті браузера</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.android.step3.title">Виберіть "Додати на головний екран"</h4>
+                                <p data-i18n="installation.android.step3.desc">Або "Install app" / "Встановити додаток" залежно від браузера</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.android.step4.title">Підтвердіть встановлення</h4>
+                                <p data-i18n="installation.android.step4.desc">Натисніть "Додати" і додаток з'явиться на головному екрані</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="ios-tab">
+                    <div class="installation-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.ios.step1.title">Відкрийте Safari</h4>
+                                <p data-i18n="installation.ios.step1.desc">Важливо використовувати саме Safari браузер на iOS пристроях</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.ios.step2.title">Перейдіть на сайт</h4>
+                                <p data-i18n="installation.ios.step2.desc">Введіть адресу сайту в адресний рядок Safari</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.ios.step3.title">Натисніть кнопку "Поділитися"</h4>
+                                <p data-i18n="installation.ios.step3.desc">Знайдіть значок поділитися (□↗) внизу екрану Safari</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.ios.step4.title">Виберіть "На екран «Домой»"</h4>
+                                <p data-i18n="installation.ios.step4.desc">Прокрутіть вниз і знайдіть опцію "На экран «Домой»" або "Add to Home Screen"</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <h4 data-i18n="installation.ios.step5.title">Додайте додаток</h4>
+                                <p data-i18n="installation.ios.step5.desc">Натисніть "Додати" і піктограма з'явиться на домашньому екрані</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="installation-note">
+                    <div class="note-icon">💡</div>
+                    <div class="note-content">
+                        <h4 data-i18n="installation.note.title">Чому це працює без App Store?</h4>
+                        <p data-i18n="installation.note.desc">disCard - це PWA (Progressive Web App), сучасна технологія, що дозволяє веб-додаткам працювати як нативні програми з офлайн доступом і push-сповіщеннями.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshots Section -->
+        <section class="screenshots" id="screenshots">
+            <div class="container">
+                <h2 class="section-title" data-i18n="screenshots.title">Простий у використанні інтерфейс</h2>
+                <div class="screenshots-grid">
+                    <div class="screenshot-card">
+                        <div class="screenshot-mockup">
+                            <div class="mockup-content cards-view">
+                                <div class="tab-bar">
+                                    <span class="tab active" data-i18n="mockupCards.tabs.cards">📱 Карти</span>
+                                </div>
+                                <div class="cards-list">
+                                    <div class="card-row">
+                                        <div class="mini-barcode"></div>
+                                        <span data-i18n="mockupCards.stores.atb">АТБ</span>
+                                    </div>
+                                    <div class="card-row">
+                                        <div class="mini-barcode"></div>
+                                        <span data-i18n="mockupCards.stores.silpo">Сільпо</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 data-i18n="screenshots.allCards">Всі карти в одному місці</h3>
+                    </div>
+                    
+                    <div class="screenshot-card">
+                        <div class="screenshot-mockup">
+                            <div class="mockup-content scanner-view">
+                                <div class="tab-bar">
+                                    <span class="tab active" data-i18n="mockupCards.tabs.add">➕ Додати</span>
+                                </div>
+                                <div class="scanner-interface">
+                                    <div class="scanner-frame"></div>
+                                    <p data-i18n="mockupCards.scanner.instruction">Наведіть камеру на код</p>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 data-i18n="screenshots.easyScanning">Легке сканування</h3>
+                    </div>
+                    
+                    <div class="screenshot-card">
+                        <div class="screenshot-mockup">
+                            <div class="mockup-content settings-view">
+                                <div class="tab-bar">
+                                    <span class="tab active" data-i18n="mockupCards.tabs.settings">⚙️ Налаштування</span>
+                                </div>
+                                <div class="settings-list">
+                                    <div class="setting-row">
+                                        <span data-i18n="mockupCards.settings.darkTheme">🌙 Темна тема</span>
+                                        <div class="toggle"></div>
+                                    </div>
+                                    <div class="setting-row">
+                                        <span data-i18n="mockupCards.settings.language">🌍 Мова: Українська</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 data-i18n="screenshots.personalization">Персоналізація</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-main">
+                    <div class="footer-brand">
+                        <a href="#" class="logo" id="footer-logo-link">
+                            <img src="/icons/logo.png" alt="disCard" width="48" height="48" class="logo-icon">
+                            <span class="logo-text">disCard</span>
+                        </a>
+                        <p class="footer-description" data-i18n="footer.description">
+                            Сучасний додаток для управління картами лояльності
+                        </p>
+                    </div>
+                    
+                    
+                    <div class="footer-support">
+                        <h4 class="footer-title" data-i18n="footer.support.title">Підтримка</h4>
+                        <ul class="footer-list">
+                            <li><a href="#installation" class="footer-link" data-i18n="footer.support.install">Як встановити</a></li>
+                            <li><a href="#features" class="footer-link" data-i18n="footer.support.features">Можливості</a></li>
+                            <li><a href="#screenshots" class="footer-link" data-i18n="footer.support.guide">Інструкція</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="footer-bottom">
+                    <div class="footer-info">
+                        <p>&copy; 2025 disCard. <span data-i18n="footer.rights">Всі права захищені.</span></p>
+                    </div>
+                    <div class="footer-tech">
+                        <span class="tech-badge">PWA</span>
+                        <span class="tech-badge">Offline Ready</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal Windows -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Заголовок</h3>
+                <button class="modal-close" id="modal-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-message" id="modal-message">Повідомлення</p>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-primary" id="modal-confirm">OK</button>
+                <button class="modal-btn modal-btn-secondary" id="modal-cancel">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/i18n.js"></script>
+    <script src="/js/landing.js"></script>
+    <script>
+        // Modal System
+        class ModalSystem {
+            constructor() {
+                this.overlay = document.getElementById('modal-overlay');
+                this.modal = this.overlay?.querySelector('.modal');
+                this.title = document.getElementById('modal-title');
+                this.message = document.getElementById('modal-message');
+                this.confirmBtn = document.getElementById('modal-confirm');
+                this.cancelBtn = document.getElementById('modal-cancel');
+                this.closeBtn = document.getElementById('modal-close');
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // Close modal handlers
+                this.closeBtn?.addEventListener('click', () => this.hide());
+                this.overlay?.addEventListener('click', (e) => {
+                    if (e.target === this.overlay) this.hide();
+                });
+                
+                // ESC key handler
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this.isVisible()) {
+                        this.hide();
+                    }
+                });
+            }
+            
+            show(options = {}) {
+                const {
+                    title = 'Повідомлення',
+                    message = '',
+                    confirmText = 'OK',
+                    cancelText = 'Скасувати',
+                    showCancel = false,
+                    onConfirm = null,
+                    onCancel = null
+                } = options;
+                
+                // Set content
+                this.title.textContent = title;
+                this.message.textContent = message;
+                this.confirmBtn.textContent = confirmText;
+                this.cancelBtn.textContent = cancelText;
+                
+                // Show/hide cancel button
+                this.cancelBtn.style.display = showCancel ? 'block' : 'none';
+                
+                // Remove old listeners
+                this.confirmBtn.onclick = null;
+                this.cancelBtn.onclick = null;
+                
+                // Add new listeners
+                this.confirmBtn.onclick = () => {
+                    if (onConfirm) onConfirm();
+                    this.hide();
+                };
+                
+                this.cancelBtn.onclick = () => {
+                    if (onCancel) onCancel();
+                    this.hide();
+                };
+                
+                // Show modal
+                this.overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                
+                // Focus on confirm button
+                setTimeout(() => {
+                    this.confirmBtn.focus();
+                }, 100);
+            }
+            
+            hide() {
+                this.overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+            
+            isVisible() {
+                return this.overlay.classList.contains('show');
+            }
+            
+            // Helper methods
+            alert(message, title = 'Повідомлення') {
+                this.show({
+                    title,
+                    message,
+                    confirmText: 'OK'
+                });
+            }
+            
+            confirm(message, title = 'Підтвердження') {
+                return new Promise((resolve) => {
+                    this.show({
+                        title,
+                        message,
+                        confirmText: 'Так',
+                        cancelText: 'Ні',
+                        showCancel: true,
+                        onConfirm: () => resolve(true),
+                        onCancel: () => resolve(false)
+                    });
+                });
+            }
+            
+            prompt(message, defaultValue = '', title = 'Введіть значення') {
+                return new Promise((resolve) => {
+                    // Create input element
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = defaultValue;
+                    input.style.width = '100%';
+                    input.style.padding = '12px';
+                    input.style.margin = '12px 0 0 0';
+                    input.style.border = '2px solid #E9ECEF';
+                    input.style.borderRadius = '8px';
+                    input.style.fontSize = '1rem';
+                    input.style.outline = 'none';
+                    input.style.transition = 'all 0.2s ease';
+                    
+                    // Focus styles
+                    input.addEventListener('focus', () => {
+                        input.style.borderColor = '#0066FF';
+                        input.style.boxShadow = '0 0 0 3px rgba(0, 102, 255, 0.1)';
+                    });
+                    
+                    input.addEventListener('blur', () => {
+                        input.style.borderColor = '#E9ECEF';
+                        input.style.boxShadow = 'none';
+                    });
+                    
+                    // Create container for message and input
+                    const container = document.createElement('div');
+                    const messageP = document.createElement('p');
+                    messageP.textContent = message;
+                    messageP.style.margin = '0';
+                    messageP.style.marginBottom = '8px';
+                    
+                    container.appendChild(messageP);
+                    container.appendChild(input);
+                    
+                    // Replace message element content
+                    this.message.innerHTML = '';
+                    this.message.appendChild(container);
+                    
+                    // Handle Enter key
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = input.value.trim();
+                            this.hide();
+                            resolve(value || null);
+                        }
+                    });
+                    
+                    this.show({
+                        title,
+                        message: '', // Will be replaced by container
+                        confirmText: 'OK',
+                        cancelText: 'Скасувати',
+                        showCancel: true,
+                        onConfirm: () => {
+                            const value = input.value.trim();
+                            resolve(value || null);
+                        },
+                        onCancel: () => resolve(null)
+                    });
+                    
+                    // Focus on input after modal is shown
+                    setTimeout(() => {
+                        input.focus();
+                        input.select();
+                    }, 100);
+                });
+            }
+        }
+        
+        // Initialize modal system
+        const modal = new ModalSystem();
+        
+        // Make modal globally available
+        window.modal = modal;
+        
+        // Add global alert, confirm, and prompt functions
+        window.alert = (message, title) => modal.alert(message, title);
+        window.confirm = (message, title) => modal.confirm(message, title);
+        window.prompt = (message, defaultValue, title) => modal.prompt(message, defaultValue, title);
+        
+        // Debug script
+        console.log('Page loaded, testing buttons...');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded');
+            
+            const ctaBtn = document.getElementById('cta-button');
+            const langBtns = document.querySelectorAll('.lang-btn');
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            console.log('CTA button found:', !!ctaBtn);
+            console.log('Language buttons found:', langBtns.length);
+            console.log('Theme toggle found:', !!themeToggle);
+            
+            // Initialize theme
+            const savedTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const currentTheme = savedTheme || systemTheme;
+            
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            updateThemeIcon(currentTheme);
+            
+            function updateThemeIcon(theme) {
+                const icon = themeToggle?.querySelector('.theme-icon');
+                if (icon) {
+                    if (theme === 'dark') {
+                        icon.innerHTML = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor"/>';
+                    } else {
+                        icon.innerHTML = '<path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" fill="currentColor"/>';
+                    }
+                }
+            }
+            
+            // Theme toggle handler
+            if (themeToggle) {
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeIcon(newTheme);
+                    
+                    console.log('Theme changed to:', newTheme);
+                });
+            }
+            
+            // CTA button direct redirect
+            if (ctaBtn) {
+                ctaBtn.addEventListener('click', function() {
+                    console.log('CTA button clicked, redirecting to app...');
+                    window.location.href = '/app';
+                });
+            }
+            
+            langBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const lang = this.dataset.lang;
+                    
+                    console.log('Landing page language change to:', lang);
+                    
+                    // Update active state
+                    langBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Change language if i18n is available
+                    if (window.i18n) {
+                        console.log('Changing language on landing page to:', lang);
+                        window.i18n.setLanguage(lang);
+                    } else {
+                        console.error('i18n not available on landing page');
+                    }
+                });
+            });
+            
+            // Logo scroll to top functionality
+            const logoLinks = document.querySelectorAll('#logo-link, #footer-logo-link');
+            logoLinks.forEach(logoLink => {
+                logoLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            });
+            
+            // Installation tabs functionality
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    
+                    // Update active button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === targetTab + '-tab') {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

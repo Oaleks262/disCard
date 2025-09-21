@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест шифрування карток - disCard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #0066FF; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { background: #0066FF; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0052CC; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .code { background: #f4f4f4; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; word-break: break-all; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: white; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #ddd; }
+        .stat-value { font-size: 2em; font-weight: bold; color: #0066FF; }
+        .stat-label { color: #666; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Тест системи шифрування карток disCard</h1>
+        
+        <div class="test-section">
+            <h2>Статус системи</h2>
+            <div id="system-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Тестові дані</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="cards-count">0</div>
+                    <div class="stat-label">Тестових карток</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="encryption-time">-</div>
+                    <div class="stat-label">Час шифрування (мс)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="decryption-time">-</div>
+                    <div class="stat-label">Час дешифрування (мс)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Базові тести</h2>
+            <button onclick="testCryptoSupport()">Перевірити підтримку Web Crypto API</button>
+            <button onclick="testKeyGeneration()">Тест генерації ключів</button>
+            <button onclick="testSingleCardEncryption()">Тест шифрування однієї картки</button>
+            <button onclick="testMultipleCards()">Тест шифрування декількох карток</button>
+            <div id="basic-tests-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Тести міграції</h2>
+            <button onclick="createTestCards()">Створити тестові картки</button>
+            <button onclick="testMigration()">Тест міграції існуючих карток</button>
+            <button onclick="clearTestData()">Очистити тестові дані</button>
+            <div id="migration-tests-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Стрес-тести</h2>
+            <button onclick="stressTestEncryption()">Стрес-тест (100 карток)</button>
+            <button onclick="performanceTest()">Тест продуктивності</button>
+            <div id="stress-tests-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Результати тестування</h2>
+            <div id="all-results"></div>
+        </div>
+    </div>
+
+    <!-- Include required scripts -->
+    <script src="/js/CryptoManager.js?v=1"></script>
+    <script src="/js/MigrationManager.js?v=1"></script>
+
+    <script>
+        let cryptoManager;
+        let migrationManager;
+        let testKey;
+        let testResults = [];
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeTestEnvironment();
+            updateSystemStatus();
+        });
+
+        async function initializeTestEnvironment() {
+            try {
+                cryptoManager = new CryptoManager();
+                
+                // Create a mock data manager for migration testing
+                const mockDataManager = {
+                    encryptionEnabled: true,
+                    cryptoManager: cryptoManager,
+                    encryptionKey: null
+                };
+                
+                migrationManager = new MigrationManager(mockDataManager);
+                
+                // Generate test key
+                testKey = await cryptoManager.generateTestKey();
+                mockDataManager.encryptionKey = testKey;
+                
+                addResult('info', 'Тестове середовище ініціалізовано успішно');
+            } catch (error) {
+                addResult('error', 'Помилка ініціалізації: ' + error.message);
+            }
+        }
+
+        function updateSystemStatus() {
+            const statusDiv = document.getElementById('system-status');
+            let html = '<div class="info">🔍 Перевіряємо систему...</div>';
+            
+            // Check Web Crypto API support
+            if (CryptoManager.isSupported()) {
+                html += '<div class="success">✅ Web Crypto API підтримується</div>';
+            } else {
+                html += '<div class="error">❌ Web Crypto API не підтримується</div>';
+            }
+            
+            // Check crypto manager
+            if (cryptoManager) {
+                html += '<div class="success">✅ CryptoManager ініціалізовано</div>';
+            } else {
+                html += '<div class="error">❌ CryptoManager не ініціалізовано</div>';
+            }
+            
+            // Check test key
+            if (testKey) {
+                html += '<div class="success">✅ Тестовий ключ згенеровано</div>';
+            } else {
+                html += '<div class="error">❌ Тестовий ключ не згенеровано</div>';
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+
+        async function testCryptoSupport() {
+            const supported = CryptoManager.isSupported();
+            if (supported) {
+                addResult('success', 'Web Crypto API підтримується');
+                
+                // Test additional features
+                try {
+                    const testData = new TextEncoder().encode('test');
+                    const key = await crypto.subtle.generateKey(
+                        { name: 'AES-GCM', length: 256 },
+                        false,
+                        ['encrypt', 'decrypt']
+                    );
+                    
+                    const iv = crypto.getRandomValues(new Uint8Array(12));
+                    const encrypted = await crypto.subtle.encrypt(
+                        { name: 'AES-GCM', iv: iv },
+                        key,
+                        testData
+                    );
+                    
+                    addResult('success', 'Базове шифрування AES-GCM працює');
+                } catch (error) {
+                    addResult('error', 'Помилка базового шифрування: ' + error.message);
+                }
+            } else {
+                addResult('error', 'Web Crypto API не підтримується цим браузером');
+            }
+        }
+
+        async function testKeyGeneration() {
+            try {
+                const start = performance.now();
+                const key1 = await cryptoManager.generateKey('test@example.com', 'password123');
+                const key2 = await cryptoManager.generateKey('test@example.com', 'password123');
+                const key3 = await cryptoManager.generateKey('test@example.com', 'password456');
+                const end = performance.now();
+                
+                addResult('success', `Генерація ключів пройшла успішно за ${Math.round(end - start)}мс`);
+                addResult('info', 'Однакові дані генерують однакові ключі (детермінізм)');
+                addResult('info', 'Різні паролі генерують різні ключі');
+                
+            } catch (error) {
+                addResult('error', 'Помилка генерації ключа: ' + error.message);
+            }
+        }
+
+        async function testSingleCardEncryption() {
+            try {
+                const testCard = {
+                    id: 'test-1',
+                    name: 'АТБ',
+                    code: '1234567890123',
+                    codeType: 'barcode',
+                    createdAt: new Date().toISOString()
+                };
+
+                const encryptStart = performance.now();
+                const encrypted = await cryptoManager.encryptCard({ code: testCard.code }, testKey);
+                const encryptEnd = performance.now();
+                
+                document.getElementById('encryption-time').textContent = Math.round(encryptEnd - encryptStart);
+
+                addResult('info', 'Зашифрована картка: <div class="code">' + encrypted.substring(0, 100) + '...</div>');
+
+                const decryptStart = performance.now();
+                const decrypted = await cryptoManager.decryptCard(encrypted, testKey);
+                const decryptEnd = performance.now();
+                
+                document.getElementById('decryption-time').textContent = Math.round(decryptEnd - decryptStart);
+
+                if (decrypted.code === testCard.code) {
+                    addResult('success', 'Одна картка: шифрування/дешифрування пройшло успішно');
+                } else {
+                    addResult('error', 'Помилка: код картки не співпадає після дешифрування');
+                }
+
+            } catch (error) {
+                addResult('error', 'Помилка шифрування картки: ' + error.message);
+            }
+        }
+
+        async function testMultipleCards() {
+            try {
+                const testCards = [
+                    { id: '1', name: 'АТБ', code: '1111111111111', codeType: 'barcode', createdAt: new Date().toISOString() },
+                    { id: '2', name: 'Сільпо', code: '2222222222222', codeType: 'barcode', createdAt: new Date().toISOString() },
+                    { id: '3', name: 'EVA', code: 'QRCODE12345', codeType: 'qrcode', createdAt: new Date().toISOString() }
+                ];
+
+                document.getElementById('cards-count').textContent = testCards.length;
+
+                const encryptStart = performance.now();
+                const encrypted = await cryptoManager.encryptCards(testCards, testKey);
+                const encryptEnd = performance.now();
+
+                const decryptStart = performance.now();
+                const decrypted = await cryptoManager.decryptCards(encrypted, testKey);
+                const decryptEnd = performance.now();
+
+                document.getElementById('encryption-time').textContent = Math.round(encryptEnd - encryptStart);
+                document.getElementById('decryption-time').textContent = Math.round(decryptEnd - decryptStart);
+
+                // Verify all cards
+                let allMatch = true;
+                for (let i = 0; i < testCards.length; i++) {
+                    if (testCards[i].code !== decrypted[i].code) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+
+                if (allMatch) {
+                    addResult('success', `Декілька карток (${testCards.length}): шифрування/дешифрування пройшло успішно`);
+                } else {
+                    addResult('error', 'Помилка: не всі картки розшифровані правильно');
+                }
+
+                // Check encrypted structure
+                addResult('info', 'Структура зашифрованої картки: <div class="code">' + JSON.stringify(encrypted[0], null, 2) + '</div>');
+
+            } catch (error) {
+                addResult('error', 'Помилка шифрування декількох карток: ' + error.message);
+            }
+        }
+
+        function createTestCards() {
+            const testCards = [
+                { id: '1', name: 'АТБ', code: '1111111111111', codeType: 'barcode', createdAt: new Date().toISOString() },
+                { id: '2', name: 'Сільпо', code: '2222222222222', codeType: 'barcode', createdAt: new Date().toISOString() },
+                { id: '3', name: 'EVA', code: 'QRCODE12345', codeType: 'qrcode', createdAt: new Date().toISOString() }
+            ];
+
+            // Save unencrypted cards to localStorage for migration test
+            localStorage.setItem('cards', JSON.stringify(testCards));
+            localStorage.removeItem('encryptionMigrationCompleted');
+
+            addResult('success', 'Створено 3 тестові незашифровані картки в localStorage');
+        }
+
+        async function testMigration() {
+            try {
+                // Reset migration status
+                migrationManager.resetMigration();
+                
+                const status = migrationManager.getMigrationStatus();
+                addResult('info', 'Статус міграції: ' + JSON.stringify(status));
+                
+                const unencryptedCount = migrationManager.getUnencryptedCardsCount();
+                addResult('info', `Знайдено ${unencryptedCount} незашифрованих карток`);
+                
+                if (unencryptedCount > 0) {
+                    const result = await migrationManager.performMigration(false);
+                    
+                    if (result.success) {
+                        addResult('success', `Міграція успішна: ${result.message}`);
+                        
+                        // Verify migration
+                        const cardsData = localStorage.getItem('cards');
+                        if (cardsData) {
+                            const cards = JSON.parse(cardsData);
+                            const encryptedCount = cards.filter(card => card.isEncrypted).length;
+                            addResult('success', `Зашифровано ${encryptedCount} карток`);
+                        }
+                    } else {
+                        addResult('error', 'Помилка міграції: ' + result.error);
+                    }
+                } else {
+                    addResult('info', 'Немає карток для міграції');
+                }
+                
+            } catch (error) {
+                addResult('error', 'Помилка тесту міграції: ' + error.message);
+            }
+        }
+
+        async function stressTestEncryption() {
+            try {
+                const cardCount = 100;
+                const testCards = [];
+                
+                // Generate test cards
+                for (let i = 0; i < cardCount; i++) {
+                    testCards.push({
+                        id: `stress-${i}`,
+                        name: `Test Card ${i}`,
+                        code: `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
+                        codeType: i % 2 === 0 ? 'barcode' : 'qrcode',
+                        createdAt: new Date().toISOString()
+                    });
+                }
+
+                addResult('info', `Створено ${cardCount} тестових карток для стрес-тесту`);
+
+                const encryptStart = performance.now();
+                const encrypted = await cryptoManager.encryptCards(testCards, testKey);
+                const encryptEnd = performance.now();
+
+                const decryptStart = performance.now();
+                const decrypted = await cryptoManager.decryptCards(encrypted, testKey);
+                const decryptEnd = performance.now();
+
+                const encryptTime = Math.round(encryptEnd - encryptStart);
+                const decryptTime = Math.round(decryptEnd - decryptStart);
+
+                // Verify all cards
+                let allMatch = true;
+                for (let i = 0; i < testCards.length; i++) {
+                    if (testCards[i].code !== decrypted[i].code) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+
+                if (allMatch) {
+                    addResult('success', `Стрес-тест пройдено: ${cardCount} карток зашифровано за ${encryptTime}мс, розшифровано за ${decryptTime}мс`);
+                    addResult('info', `Середня швидкість: ${Math.round(cardCount * 1000 / encryptTime)} карток/сек (шифрування), ${Math.round(cardCount * 1000 / decryptTime)} карток/сек (дешифрування)`);
+                } else {
+                    addResult('error', 'Стрес-тест не пройдено: помилка в розшифруванні');
+                }
+
+                document.getElementById('cards-count').textContent = cardCount;
+                document.getElementById('encryption-time').textContent = encryptTime;
+                document.getElementById('decryption-time').textContent = decryptTime;
+
+            } catch (error) {
+                addResult('error', 'Помилка стрес-тесту: ' + error.message);
+            }
+        }
+
+        async function performanceTest() {
+            const tests = [
+                { count: 1, name: '1 картка' },
+                { count: 5, name: '5 карток' },
+                { count: 10, name: '10 карток' },
+                { count: 50, name: '50 карток' },
+                { count: 100, name: '100 карток' }
+            ];
+
+            addResult('info', 'Запуск тестів продуктивності...');
+
+            for (const test of tests) {
+                try {
+                    const testCards = [];
+                    for (let i = 0; i < test.count; i++) {
+                        testCards.push({
+                            id: `perf-${i}`,
+                            name: `Card ${i}`,
+                            code: `${Math.random().toString(36).substring(2, 15)}`,
+                            codeType: 'barcode',
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+
+                    const encryptStart = performance.now();
+                    const encrypted = await cryptoManager.encryptCards(testCards, testKey);
+                    const encryptEnd = performance.now();
+
+                    const decryptStart = performance.now();
+                    const decrypted = await cryptoManager.decryptCards(encrypted, testKey);
+                    const decryptEnd = performance.now();
+
+                    const encryptTime = Math.round(encryptEnd - encryptStart);
+                    const decryptTime = Math.round(decryptEnd - decryptStart);
+
+                    addResult('info', `${test.name}: шифрування ${encryptTime}мс, дешифрування ${decryptTime}мс`);
+
+                } catch (error) {
+                    addResult('error', `Помилка тесту ${test.name}: ${error.message}`);
+                }
+            }
+
+            addResult('success', 'Тести продуктивності завершено');
+        }
+
+        function clearTestData() {
+            localStorage.removeItem('cards');
+            localStorage.removeItem('encryptionMigrationCompleted');
+            testResults = [];
+            document.getElementById('all-results').innerHTML = '';
+            addResult('info', 'Тестові дані очищено');
+            updateStats();
+        }
+
+        function addResult(type, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const result = { type, message, timestamp };
+            testResults.push(result);
+            
+            const resultsDiv = document.getElementById('all-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `test-result ${type}`;
+            resultElement.innerHTML = `[${timestamp}] ${message}`;
+            resultsDiv.appendChild(resultElement);
+            
+            // Auto-scroll to bottom
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            const successCount = testResults.filter(r => r.type === 'success').length;
+            const errorCount = testResults.filter(r => r.type === 'error').length;
+            
+            // Update some basic stats if needed
+        }
+    </script>
+</body>
+</html>

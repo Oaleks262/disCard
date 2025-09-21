@@ -1,0 +1,81 @@
+{
+  "name": "disCard - Карти лояльності",
+  "short_name": "disCard",
+  "description": "Сучасний PWA додаток для управління картами лояльності з підтримкою сканування та офлайн режиму",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0066FF",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "uk",
+  "dir": "ltr",
+  "categories": ["productivity", "shopping", "utilities", "lifestyle"],
+  "keywords": ["карти лояльності", "сканування", "PWA", "офлайн", "дисконтні карти", "мобільний"],
+  "id": "/app",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "icons": [
+    {
+      "src": "/icons/logo.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo.png", 
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/cards-view.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Перегляд карт лояльності"
+    },
+    {
+      "src": "/screenshots/scanner-view.png", 
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Сканування штрих-кодів"
+    },
+    {
+      "src": "/screenshots/desktop-view.png",
+      "sizes": "1280x800",
+      "type": "image/png", 
+      "form_factor": "wide",
+      "label": "Настільна версія"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

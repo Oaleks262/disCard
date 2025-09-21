@@ -72,8 +72,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/loyalty-c
 const transporter = nodemailer.createTransport({
   service: 'gmail', // або інший сервіс
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.EMAIL_PASS || 'your-app-password'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -417,7 +417,7 @@ const authenticateToken = async (req, res, next) => {
     // Generate new token with extended expiry (30 days from now)
     const newToken = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
     
@@ -471,7 +471,7 @@ app.post('/api/auth/register', [
     // Generate token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -544,7 +544,7 @@ app.post('/api/auth/login', [
     // Direct login without 2FA (if email not configured or sending failed)
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
@@ -604,7 +604,7 @@ app.post('/api/auth/verify-code', [
     // Generate token
     const token = jwt.sign(
       { userId: user._id },
-      process.env.JWT_SECRET || 'fallback-secret-key',
+      process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 

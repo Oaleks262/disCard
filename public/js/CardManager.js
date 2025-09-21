@@ -253,7 +253,7 @@ class CardManager {
   }
 
   waitForCardCode(card) {
-    const maxRetries = 20; // 10 seconds max
+    const maxRetries = 30; // 15 seconds max
     let retryCount = 0;
     
     const checkCode = () => {
@@ -262,21 +262,55 @@ class CardManager {
       // Find updated card from AppState
       const updatedCard = AppState.cards.find(c => c._id === card._id);
       
+      console.log(`[${retryCount}/${maxRetries}] Checking card code:`, {
+        cardId: card._id,
+        hasCode: !!(updatedCard && updatedCard.code),
+        hasEncryptedCode: !!(updatedCard && updatedCard.encryptedCode),
+        codeLength: updatedCard?.code?.length || 0
+      });
+      
       if (updatedCard && updatedCard.code && updatedCard.code.trim() !== '') {
         // Code is now available, generate it
+        console.log('✅ Card code ready, generating modal code');
         this.currentCard = updatedCard;
         this.generateModalCode(updatedCard);
       } else if (retryCount < maxRetries) {
+        // Try to trigger refresh from server if we have encrypted code but no plain code
+        if (updatedCard && updatedCard.encryptedCode && !updatedCard.code && retryCount === 5) {
+          console.log('🔄 Triggering server refresh for card decryption');
+          this.triggerCardRefresh();
+        }
+        
         // Retry after 500ms
         setTimeout(checkCode, 500);
       } else {
-        // Max retries reached, show error
-        this.showModalError('Не вдалося завантажити код картки');
+        // Max retries reached, show error with diagnostic info
+        console.error('❌ Card loading failed after max retries:', {
+          finalCard: updatedCard,
+          hasEncryptedCode: !!(updatedCard && updatedCard.encryptedCode),
+          attempts: retryCount
+        });
+        this.showModalError('Не вдалося завантажити код картки. Спробуйте оновити сторінку.');
       }
     };
     
     // Start checking
     setTimeout(checkCode, 500);
+  }
+
+  async triggerCardRefresh() {
+    try {
+      // Try to refresh cards from server
+      if (this.app && this.app.dataManager) {
+        const response = await this.app.dataManager.apiCall('/auth/me', { method: 'GET' });
+        if (response && response.cards) {
+          AppState.cards = response.cards;
+          console.log('🔄 Cards refreshed from server');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh cards from server:', error);
+    }
   }
 
   generateModalCode(card) {

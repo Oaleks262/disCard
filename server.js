@@ -548,8 +548,15 @@ app.post('/api/auth/login', [
       { expiresIn: '30d' }
     );
 
-    // Return cards as they are - decryption will be handled on client side
-    const cardsToReturn = user.cards;
+    // Return cards with decrypted codes for client display
+    let cardsToReturn = user.cards;
+    if (user.encryptionKey && user.cards.length > 0) {
+      cardsToReturn = user.cards.map(card => ({
+        ...card.toObject(),
+        code: card.isEncrypted ? decryptCardCode(card.encryptedCode, user.encryptionKey) : card.code,
+        encryptedCode: undefined // Don't send encrypted data to client
+      }));
+    }
 
     res.json({
       user: {
@@ -608,8 +615,15 @@ app.post('/api/auth/verify-code', [
       { expiresIn: '30d' }
     );
 
-    // Return cards as they are - decryption will be handled on client side
-    const cardsToReturn = user.cards;
+    // Return cards with decrypted codes for client display
+    let cardsToReturn = user.cards;
+    if (user.encryptionKey && user.cards.length > 0) {
+      cardsToReturn = user.cards.map(card => ({
+        ...card.toObject(),
+        code: card.isEncrypted ? decryptCardCode(card.encryptedCode, user.encryptionKey) : card.code,
+        encryptedCode: undefined // Don't send encrypted data to client
+      }));
+    }
 
     res.json({
       user: {

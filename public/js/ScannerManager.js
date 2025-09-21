@@ -14,6 +14,15 @@ class ScannerManager {
       return;
     }
 
+    // Check if we're in PWA mode and provide early guidance
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone || 
+                        document.referrer.includes('android-app://');
+    
+    if (isStandalone) {
+      console.log('🎯 Running in PWA standalone mode - camera permissions may need manual setup');
+    }
+
     // Check if required scanning libraries are available
     const selectedCodeType = document.querySelector('input[name="codeType"]:checked')?.value || 'qrcode';
     const requiredLibrary = selectedCodeType === 'qrcode' ? 'jsQR' : 'Quagga';
@@ -42,8 +51,29 @@ class ScannerManager {
     modal.classList.add('show');
 
     try {
+      // Check for PWA standalone mode
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone || 
+                          document.referrer.includes('android-app://');
+      
       // Detect mobile device for optimized settings
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      console.log('Camera access attempt:', { isStandalone, isMobile, userAgent: navigator.userAgent });
+      
+      // Check camera permissions first, especially important for PWA
+      if (isStandalone && navigator.permissions) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'camera' });
+          console.log('Camera permission status:', permissionStatus.state);
+          
+          if (permissionStatus.state === 'denied') {
+            throw new Error('CameraPermissionDenied');
+          }
+        } catch (permError) {
+          console.warn('Could not check camera permissions:', permError);
+        }
+      }
       
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
@@ -72,14 +102,29 @@ class ScannerManager {
   }
 
   handleCameraError(error) {
+    console.error('Camera error details:', error);
+    
+    // Check if we're in PWA mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone || 
+                        document.referrer.includes('android-app://');
+    
     let errorMessage = 'Помилка доступу до камери';
     
-    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      errorMessage = 'Доступ до камери заборонено. Дозвольте доступ в налаштуваннях браузера';
+    if (error.message === 'CameraPermissionDenied' || error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+      if (isStandalone) {
+        errorMessage = 'Доступ до камери заборонено. Для PWA додатку:\n\n📱 iOS: Налаштування → Safari → Камера → Дозволити\n🤖 Android: Налаштування додатку → Дозволи → Камера';
+      } else {
+        errorMessage = 'Доступ до камери заборонено. Дозвольте доступ в налаштуваннях браузера';
+      }
     } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
       errorMessage = 'Камера не знайдена на пристрої';
     } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-      errorMessage = 'Камера зайнята іншою програмою';
+      if (isStandalone) {
+        errorMessage = 'Камера зайнята. Закрийте інші додатки що використовують камеру і спробуйте знову';
+      } else {
+        errorMessage = 'Камера зайнята іншою програмою';
+      }
     } else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') {
       errorMessage = 'Камера не підтримує необхідні параметри';
     } else if (error.name === 'NotSupportedError') {
@@ -88,7 +133,13 @@ class ScannerManager {
       errorMessage = 'Доступ до камери заблоковано з міркувань безпеки. Переконайтеся, що сайт використовує HTTPS';
     }
 
-    UIUtils.showToast('error', errorMessage);
+    // Show error with retry option for PWA permission issues
+    if (isStandalone && (error.message === 'CameraPermissionDenied' || error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError')) {
+      UIUtils.showToast('error', errorMessage + '\n\nПісля надання дозволу натисніть "Сканувати" знову');
+    } else {
+      UIUtils.showToast('error', errorMessage);
+    }
+    
     this.closeScanner();
   }
 

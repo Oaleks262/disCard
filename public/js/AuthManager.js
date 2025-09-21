@@ -140,7 +140,11 @@ class AuthManager {
         // Wait for app screen to load before updating UI
         setTimeout(() => {
           this.app.updateProfile();
-          this.app.renderCards();
+          
+          // Wait for encryption initialization before rendering cards
+          setTimeout(() => {
+            this.app.renderCards();
+          }, 1200); // Wait extra time for encryption setup
           
           // Reset flag after UI is updated
           setTimeout(() => {
@@ -514,7 +518,11 @@ class AuthManager {
         // Wait for app screen to load before updating UI
         setTimeout(() => {
           this.app.updateProfile();
-          this.app.renderCards();
+          
+          // Wait for encryption initialization before rendering cards
+          setTimeout(() => {
+            this.app.renderCards();
+          }, 1200); // Wait extra time for encryption setup
           
           setTimeout(() => {
             this.justAuthenticated = false;

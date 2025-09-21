@@ -35,6 +35,11 @@ class DataManager {
             autoRun: true,
             requireConfirmation: false
           });
+          
+          // Trigger card re-rendering after migration completes
+          if (window.app && window.app.cardManager) {
+            window.app.cardManager.renderCards();
+          }
         } catch (error) {
           console.error('Auto-migration failed:', error);
         }
